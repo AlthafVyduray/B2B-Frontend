@@ -13,6 +13,8 @@ import { Separator } from "@/components/ui/separator"
 import Sidebar from "@/app/components/admin/Sidebar"
 import { CalendarDays, Clock, CheckCircle, DollarSign } from "lucide-react";
 import Header from "@/app/components/admin/Hearder"
+import DefaultPackageBookingEditFromSelected from "./DefaultPackageBookingEditFromSelected"
+
 
 export default function BookingsPage() {
     const [searchTerm, setSearchTerm] = useState("")
@@ -29,6 +31,7 @@ export default function BookingsPage() {
       updateBooking,
       bookingStats,
       confirmBooking,
+      cancelBooking,
       bookingPagination = { page: 1, totalPages: 1, limit: 10, total: 0 },
     } = useAdminStore();
 
@@ -127,51 +130,10 @@ const stats = [
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stateFilter, searchTerm, page, limit]);
 
-    // const bookings = [
-    //     {
-    //         id: "68b7cdcb6bb3bc...",
-    //         createdDate: "2025-09-19",
-    //         contact: {
-    //             name: "Rajesh Kumar",
-    //             email: "test@gmail.com",
-    //             phone: "9876543210",
-    //             state: "Kerala",
-    //         },
-    //         package: {
-    //             name: "1 NIGHT 2DAY",
-    //             type: "Couple Package",
-    //             destination: "Munnar Hills",
-    //         },
-    //         dates: {
-    //             pickup: "2025-09-19 @ 10:36",
-    //             drop: "2025-09-20 @ 10:35",
-    //             station: "Railway Station",
-    //         },
-    //         guests: {
-    //             adults: 4,
-    //             children: 1,
-    //             infants: 0,
-    //         },
-    //         extras: ["Entry ticket ✓", "Snow world ✓", "Food plan: MAP", "Extras: Breakfast", "Lunch(V)", "Lunch(NV)"],
-    //         hotel: {
-    //             name: "The Grand Palace",
-    //             location: "Munnar",
-    //             rooms: 2,
-    //             extraBeds: 1,
-    //         },
-    //         pricing: {
-    //             base: 21850,
-    //             commission: 2185,
-    //             total: 24035,
-    //         },
-    //         status: "confirmed",
-    //     },
-
-
-    // ]
+    
 
     useEffect(() => {
-    if (editedBooking) {
+    if (editedBooking && editedBooking.source === "booking") {
       const pkgId = editedBooking.package_id && typeof editedBooking.package_id === "object"
         ? (editedBooking.package_id || "")
         : editedBooking.package_id || "";
@@ -292,6 +254,7 @@ const stats = [
     try {
       if (typeof updateBooking === "function") {
         await updateBooking(editedBooking._id, payload);
+        console.log(bookings)
       } else {
         console.warn("updateBooking is not a function in store");
       }
@@ -308,6 +271,20 @@ const stats = [
     }
     try {
       await confirmBooking(selectedBooking._id);
+      setSelectedBooking(null)
+    } catch (error) {
+      
+    }
+    
+  }
+
+  const handleBookingCancel = async () => {
+    if (selectedBooking.status === "cancelled") {
+      setSelectedBooking(null);
+      return;
+    }
+    try {
+      await cancelBooking(selectedBooking._id);
       setSelectedBooking(null)
     } catch (error) {
       
@@ -352,6 +329,7 @@ const stats = [
         }
     }
 
+  
     return (
         <div className=" bg-background flex lg:mt-0 mt-10">
             {/* <Sidebar active="Destinations" /> */}
@@ -367,6 +345,7 @@ const stats = [
                         </div>
  
                     </div>
+                    
 
                     {/* Stats Cards */}
                     <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -446,7 +425,8 @@ const stats = [
                                                 <p className="text-xs text-gray-500 uppercase tracking-wide">Booking ID</p>
                                                 <p className="font-mono text-sm font-medium text-gray-900">{booking._id}</p>
                                                 <p className="text-xs text-gray-500">Created: {booking.createdAt}</p>
-                                                <Badge className={`${getStatusColor(booking.status)} capitalize`}>{booking.status}</Badge>
+                                                <p><Badge className={`${getStatusColor(booking.status)} capitalize`}>{booking.status}</Badge></p>
+                                                <p><Badge className={`${booking.source === "defaultPackageBooking" ? "bg-red-300" : "bg-blue-300" }`}>{booking.source === "booking" ? "Normal Package" : "Default Package"}</Badge></p>
                                             </div>
                                         </div>
 
@@ -488,7 +468,7 @@ const stats = [
                                                 </p>
 
                                                 <div className="flex gap-2 pt-2">
-                                                    <Button onClick={(e) => { e.stopPropagation(); setSelectedBooking(booking) }} size="sm" variant="outline" className="flex-1 bg-transparent">
+                                                    <Button onClick={(e) => { e.stopPropagation(); setSelectedBooking(booking); console.log(booking) }} size="sm" variant="outline" className="flex-1 bg-transparent">
                                                         <Eye className="w-3 h-3 mr-1" />
                                                         View
                                                     </Button>
@@ -566,7 +546,7 @@ const stats = [
             </main>
             
             {/* VIEW Modal */}
-      {selectedBooking && (
+      {(selectedBooking && selectedBooking.source === "booking" ) && (
         <div className="fixed inset-0 z-50 bg-white/30 backdrop-blur-sm flex items-center justify-center px-4">
           <div className="bg-white w-full max-w-2xl rounded-lg shadow-xl relative overflow-y-auto max-h-[90vh] border border-gray-200">
             <Card>
@@ -709,11 +689,130 @@ const stats = [
 
                 {/* Footer with Cancel */}
                 <div className="flex justify-between pt-4 border-t">
-                    <button
+                  <button
                     onClick={handleBookingConfirm}
                     className="bg-blue-600 text-white px-5 py-2.5 rounded hover:bg-blue-700 text-sm font-semibold"
                   >
                     Confirm Booking
+                  </button>
+                   <button
+                    onClick={handleBookingCancel}
+                    className="bg-blue-600 text-white px-5 py-2.5 rounded hover:bg-blue-700 text-sm font-semibold"
+                  >
+                    Cancel Booking
+                  </button>
+                  <button
+                    onClick={() => setSelectedBooking(null)}
+                    className="bg-red-600 text-white px-5 py-2.5 rounded hover:bg-red-700 text-sm font-semibold"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
+
+          </div>
+        </div>
+        )}
+        {(selectedBooking && selectedBooking.source === "defaultPackageBooking" ) && console.log(selectedBooking.source)}
+      {(selectedBooking && selectedBooking.source === "defaultPackageBooking" ) && (
+        <div className="fixed inset-0 z-50 bg-white/30 backdrop-blur-sm flex items-center justify-center px-4">
+          <div className="bg-white w-full max-w-2xl rounded-lg shadow-xl relative overflow-y-auto max-h-[90vh] border border-gray-200">
+            <Card>
+              {/* Header */}
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <EyeIcon className="w-5 h-5 text-primary" />
+                  Booking Details
+                </CardTitle>
+                <button
+                  onClick={() => setSelectedBooking(null)}
+                  className="p-1 rounded hover:bg-gray-100"
+                >
+                  <X size={20} className="text-gray-600 hover:text-red-500" />
+                </button>
+              </CardHeader>
+
+              {/* Content */}
+              <CardContent className="space-y-6">
+                {/* Customer Info */}
+                <div className="border rounded-lg p-4">
+                  <h3 className="font-semibold mb-2">Customer Information</h3>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <p><strong>Name:</strong> {selectedBooking?.contact?.name ?? "—"}</p>
+                    <p><strong>State:</strong> {selectedBooking?.contact?.state ?? "—"}</p>
+                    <p><strong>Email:</strong> {selectedBooking?.contact?.email ?? "—"}</p>
+                    <p><strong>Mobile:</strong> {selectedBooking?.contact?.mobile_number ?? "—"}</p>
+                  </div>
+                </div>
+
+                {/* Booking Info */}
+                <div className="border rounded-lg p-4">
+                  <h3 className="font-semibold mb-2">Booking Information</h3>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <p><strong>Booking ID:</strong> {selectedBooking?._id ?? "—"}</p>
+                    <p><strong>Package:</strong> {selectedBooking?.package_name ?? "—"}</p>
+                    <div>
+                      <p><strong>Pickup:</strong> {selectedBooking?.dates?.outbound?.pickup_date ? String(selectedBooking.dates.outbound.pickup_date).slice(0,10) : "—"} </p>
+                      <p><strong>Flight details:</strong> {selectedBooking?.dates?.outbound?.flight ?? "—"} </p>
+                      <p><strong>Departure:</strong> {selectedBooking?.dates?.outbound?.departureTime ?? "—"} </p>
+                      <p><strong>Arrival:</strong> {selectedBooking?.dates?.outbound?.arrivalTime ?? "—"} </p>  
+                    </div>
+                    <div>
+                      <p><strong>Drop:</strong> {selectedBooking?.dates?.return?.drop_date ? String(selectedBooking.dates.return.drop_date).slice(0,10) : "—"} </p>
+                      <p><strong>Flight details:</strong> {selectedBooking?.dates?.return?.flight ?? "—"} </p>
+                      <p><strong>Departure:</strong> {selectedBooking?.dates?.return?.departureTime ?? "—"} </p>
+                      <p><strong>Arrival:</strong> {selectedBooking?.dates?.return?.arrivalTime ?? "—"} </p>
+                    </div>
+                    
+                  </div>
+                </div>
+
+                {/* Guests & Extras */}
+                <div className="border rounded-lg p-4">
+                  <h3 className="font-semibold mb-2">Guests & Extras</h3>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <p><strong>Adults:</strong> {selectedBooking?.guests?.adults_total ?? "—"}</p>
+                    <p><strong>Children With Bed:</strong> {selectedBooking?.guests?.children_with_bed ?? "—"}</p>
+                    <p><strong>Children Without Bed:</strong> {selectedBooking?.guests?.children_without_bed ?? "—"}</p>
+                    <p><strong>Infants:</strong> {selectedBooking?.guests?.infants ?? "—"}</p>
+                  </div>
+                </div>
+
+        
+
+                  <div className="border rounded-lg p-4">
+                    <h3 className="font-semibold mb-2">Payment Details</h3>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <p><strong>Base Total:</strong> {fmt(selectedBooking?.pricing?.base_total)}</p>
+                      <p><strong>Agent Commission:</strong> {fmt(selectedBooking?.pricing?.agent_commission)}</p>
+                      <p className="text-lg font-bold"><strong>Total Amount:</strong> {fmt(selectedBooking?.pricing?.total_amount)}</p>
+                    </div>
+                  </div>
+
+              
+
+                {/* Raw JSON */}
+                {/* <div className="border rounded-lg p-4">
+                  <h3 className="font-semibold mb-2">All booking fields (raw)</h3>
+                  <pre className="bg-gray-100 p-2 rounded text-xs overflow-auto max-h-48">
+                    {JSON.stringify(selectedBooking, null, 2)}
+                  </pre>
+                </div> */}
+
+                {/* Footer with Cancel */}
+                <div className="flex justify-between pt-4 border-t">
+                  <button
+                    onClick={handleBookingConfirm}
+                    className="bg-blue-600 text-white px-5 py-2.5 rounded hover:bg-blue-700 text-sm font-semibold"
+                  >
+                    Confirm Booking
+                  </button>
+                   <button
+                    onClick={handleBookingCancel}
+                    className="bg-blue-600 text-white px-5 py-2.5 rounded hover:bg-blue-700 text-sm font-semibold"
+                  >
+                    Cancel Booking
                   </button>
                   <button
                     onClick={() => setSelectedBooking(null)}
@@ -751,7 +850,7 @@ const stats = [
       )}
 
       {/* Edit modal (includes new fields) */}
-      {editedBooking && (
+      {(editedBooking && editedBooking.source === "booking") && (
         <div className="fixed inset-0 z-50 bg-white/30 backdrop-blur-sm flex items-center justify-center px-4">
           <div className="bg-white w-full max-w-3xl rounded-lg shadow-xl relative overflow-y-auto max-h-[90vh] border border-gray-200">
             <div className="flex justify-between items-center px-6 py-5 bg-gray-100">
@@ -928,7 +1027,95 @@ const stats = [
             </form>
           </div>
         </div>
-      )}
+        )}
+        
+
+        {(editedBooking && editedBooking.source === "defaultPackageBooking") && (
+        // <div className="fixed inset-0 z-50 bg-white/30 backdrop-blur-sm flex items-center justify-center px-4">
+        //   <div className="bg-white w-full max-w-3xl rounded-lg shadow-xl relative overflow-y-auto max-h-[90vh] border border-gray-200">
+        //     <div className="flex justify-between items-center px-6 py-5 bg-gray-100">
+        //       <h3 className="text-2xl font-semibold text-gray-800">Edit Booking</h3>
+        //       <button onClick={closeModal}>
+        //         <X size={24} className="text-gray-600 hover:text-red-500" />
+        //       </button>
+        //     </div>
+
+        //     <form onSubmit={handleSubmit} className="p-6 space-y-6 text-base text-gray-700">
+        //       {/* Customer Info */}
+        //       <div>
+        //         <h4 className="font-semibold text-gray-900 mb-3 text-lg">Customer Information</h4>
+        //         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        //           <input type="email" name="email" value={formData.email} placeholder="Email" className="border rounded-lg px-3 py-2 w-full" disabled />
+        //           <input type="text" name="mobile_number" value={formData.mobile_number} placeholder="Mobile Number" className="border rounded-lg px-3 py-2 w-full" disabled />
+        //         </div>
+        //       </div>
+
+        //       {/* Booking Info */}
+        //       <div>
+        //         <h4 className="font-semibold text-gray-900 mb-3 text-lg">Booking Information</h4>
+        //         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        //           <label htmlFor="package_name">
+        //             Package <input type="text" id="package_name" value={formData.package_name} placeholder="Package Name" className="border rounded-lg px-3 py-2 w-full" disabled/>
+        //           </label>
+                 
+        //           <label>
+        //             pickup date<input type="date" name="pickup_date" value={formData.pickup_date} onChange={handleChange} className="border rounded-lg px-3 py-2 w-full" />
+        //           </label>
+        //           <label>
+        //             pickup time<input type="time" name="pickup_time" value={formData.pickup_time} onChange={handleChange} className="border rounded-lg px-3 py-2 w-full" />
+        //           </label>
+        //           <label>
+        //             drop date<input type="date" name="drop_date" value={formData.drop_date} onChange={handleChange} className="border rounded-lg px-3 py-2 w-full" />
+        //           </label>
+        //           <label>
+        //             drop time<input type="time" name="drop_time" value={formData.drop_time} onChange={handleChange} className="border rounded-lg px-3 py-2 w-full" />
+        //           </label>
+        //           <label>
+        //             pickup location<input type="text" name="pickup_location" value={formData.pickup_location} onChange={handleChange} className="border rounded-lg px-3 py-2 w-full" />
+        //           </label>
+        //           <label>
+        //             drop location<input type="text" name="drop_location" value={formData.drop_location} onChange={handleChange} className="border rounded-lg px-3 py-2 w-full" />
+        //           </label>
+
+                  
+                  
+                  
+        //         </div>
+        //       </div>
+
+        //       {/* Guests */}
+        //       <div>
+        //         <h4 className="font-semibold text-gray-900 mb-3 text-lg">Guests</h4>
+        //         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        //           <input type="number" name="adults_total" value={formData.adults_total} onChange={handleChange} placeholder="Adults" className="border rounded-lg px-3 py-2 w-full" min="0" />
+        //           <input type="number" name="children" value={formData.children} onChange={handleChange} placeholder="Children" className="border rounded-lg px-3 py-2 w-full" min="0" />
+        //           <input type="number" name="infants" value={formData.infants} onChange={handleChange} placeholder="Infants" className="border rounded-lg px-3 py-2 w-full" min="0" />
+        //         </div>
+        //       </div>
+
+
+        //       {/* Payment */}
+        //       <div>
+        //         <h4 className="font-semibold text-gray-900 mb-3 text-lg">Payment</h4>
+        //         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        //           <label>Base Total<input type="text" name="base_total" value={formData.base_total} onChange={handleChange} placeholder="Base Total" className="border rounded-lg px-3 py-2 w-full" /></label>
+        //           <label>Agent Commission<input type="text" name="agent_commission" value={formData.agent_commission} onChange={handleChange} placeholder="Agent Commission" className="border rounded-lg px-3 py-2 w-full" /></label>
+        //           <label>Total Amount<input type="text" name="total_amount" value={formData.total_amount} onChange={handleChange} placeholder="Total Amount" className="border rounded-lg px-3 py-2 w-full" /></label>
+        //         </div>
+        //       </div>
+
+        //       <div className="flex justify-end gap-4 border-t pt-5">
+        //         <button type="button" onClick={closeModal} className="bg-gray-300 text-gray-800 px-5 py-2.5 rounded hover:bg-gray-400 text-lg font-semibold">Cancel</button>
+        //         <button type="submit" className="bg-green-600 text-white px-5 py-2.5 rounded hover:bg-green-700 text-lg font-semibold">Save Changes</button>
+        //       </div>
+        //     </form>
+        //   </div>
+          // </div>
+          <DefaultPackageBookingEditFromSelected editedBooking={editedBooking} setEditedBooking={setEditedBooking} />
+        )}
+        
+
+
 
         </div>
     )

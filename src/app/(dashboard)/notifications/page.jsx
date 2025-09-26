@@ -21,7 +21,7 @@ import {
   Calendar,
   User,
   Settings,
-  X
+  X,
 } from "lucide-react"
 import Header from "@/app/components/admin/Hearder"
 
@@ -142,8 +142,10 @@ export default function NotificationsPage() {
         return <CheckCircle className="h-5 w-5 text-green-500" />
       case "system":
         return <Settings className="h-5 w-5 text-blue-500" />
+      case "cancel":
+        return <XCircle className="h-5 w-5 text-red-500" /> // ❌ Cancel icon
       default:
-        return <Settings className="h-5 w-5 text-blue-500" />
+        return null
     }
   }
 
@@ -279,6 +281,7 @@ export default function NotificationsPage() {
                 <option value="system">System</option>
                 <option value="success">Success</option>
                 <option value="booking">Booking</option>
+                <option value="cancel">Cancelled</option>
               </select>
               <select
                 value={filterStatus}
@@ -298,12 +301,16 @@ export default function NotificationsPage() {
         {notifications.map((notification) => (
           <Card
             key={notification._id}
-            className={`transition-all hover:shadow-md ${(notification.type === "system" && notification.status === "active") ? "border-l-4 border-l-blue-500" : ""}`}
+            className={`transition-all hover:shadow-md border-l-4
+              ${notification.type === "success" ? "border-l-green-600" : ""}
+              ${notification.type === "booking" ? "border-l-yellow-600" : ""}
+              ${notification.type === "system" ? "border-l-blue-600" : ""}
+              ${notification.type === "cancel" ? "border-l-red-600" : ""}`}
           >
             <CardContent className="p-6">
               <div className="flex items-start justify-between">
                 <div className="flex flex-col gap-2">
-                  <div className="flex-shrink-0">{(notification.type === "success" || notification.type === "booking") && `Booking ID :  ${notification.booking}`}</div>
+                  <div className="flex-shrink-0">{(notification.type === "success" || notification.type === "booking" || notification.type === "cancel") && `Booking ID :  ${notification.booking}`}</div>
                   <div className="flex items-start space-x-4 flex-1">
                     <div className="flex-shrink-0">{getTypeIcon(notification.type)}</div>
                     <div className="flex-1 min-w-0">

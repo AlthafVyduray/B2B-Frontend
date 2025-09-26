@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import useAdminStore from "@/stores/useAdminStore";
+import { Badge } from "@/components/ui/badge"
 import {
   ClipboardList,
   DollarSign,
@@ -89,13 +90,6 @@ export default function Dashboard() {
   //   },
   // ]
   
-
-  const topDestinations = [
-    { name: "Paris, France", bookings: 245, revenue: "$125,000", growth: "+12%" },
-    { name: "Tokyo, Japan", bookings: 189, revenue: "$98,500", growth: "+8%" },
-    { name: "Bali, Indonesia", bookings: 167, revenue: "$87,200", growth: "+15%" },
-    { name: "New York, USA", bookings: 134, revenue: "$76,800", growth: "+5%" },
-  ]
 
   // const travelPackages = [
   //   { name: "Romantic Getaway", bookings: 89, price: "$2,450", rating: 4.8 },
@@ -199,8 +193,7 @@ export default function Dashboard() {
             </div>*/}
           </div>
 
-          {/* Main Dashboard Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
             {/* Recent Bookings */}
             <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow">
               <div className="flex items-center justify-between mb-4">
@@ -215,6 +208,7 @@ export default function Dashboard() {
                       <th className="p-3">Package</th>
                       <th className="p-3">Amount</th>
                       <th className="p-3">Status</th>
+                      <th className="p-3">Booking Type</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -236,35 +230,14 @@ export default function Dashboard() {
                             {booking.status}
                           </span>
                         </td>
+                        <td className="p-3 text-black font-semibold"><Badge className={`${booking.source === "booking" ? "bg-blue-300" : "bg-red-300"}`}>{booking.source === "booking" ? "Normal Package" : "Default Package"}</Badge></td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-            </div>
-
-            {/* Top Destinations */}
-            <div className="bg-white p-6 rounded-xl shadow">
-              <h3 className="text-lg font-bold mb-4 text-black">Top Destinations</h3>
-              <div className="space-y-4">
-                {topDestinations.map((dest, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <Globe className="text-blue-600" size={20} />
-                      <div>
-                        <p className="font-medium text-black text-sm">{dest.name}</p>
-                        <p className="text-gray-500 text-xs">{dest.bookings} bookings</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-black text-sm">{dest.revenue}</p>
-                      <p className="text-green-500 text-xs">{dest.growth}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
+
 
 
 

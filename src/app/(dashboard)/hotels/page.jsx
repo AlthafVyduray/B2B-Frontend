@@ -20,8 +20,9 @@ import {
   X
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent } from "@/components/ui/card"
+import { Label } from "@radix-ui/react-dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import Sidebar from "@/app/components/admin/Sidebar"
@@ -520,38 +521,38 @@ export default function HotelsPage() {
 
       {/* Edit Modal */}
       {hotelToUpdate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" role="dialog" aria-modal="true">
+        <Card className="fixed inset-0 z-50 flex items-center justify-center px-4" role="dialog" aria-modal="true">
           <div className="absolute inset-0 bg-black/25 backdrop-blur-sm" />
           <div className="relative bg-white rounded-lg shadow-xl w-full max-w-2xl mx-auto overflow-auto z-10">
-            <div className="flex items-center justify-between p-5 border-b">
+            <CardHeader className="flex items-center justify-between p-5 border-b">
               <h3 className="text-2xl font-semibold text-gray-900">Edit Hotel</h3>
-              <button onClick={() => setHotelToUpdate(null)} aria-label="Close" className="p-1 text-gray-500 hover:text-red-500"><X size={20} /></button>
-            </div>
+              <Button onClick={() => setHotelToUpdate(null)} aria-label="Close" className="p-1 text-gray-500 hover:text-red-500"><X size={20} /></Button>
+            </CardHeader>
 
             <form onSubmit={handleUpdateSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <label className="flex flex-col">
+                <Label className="flex flex-col">
                   <span className="text-sm font-medium">Name</span>
-                  <input name="name" value={formData.name} onChange={handleChange} className="border rounded px-3 py-2" />
-                </label>
+                  <Input name="name" value={formData.name} onChange={handleChange} className="border rounded px-3 py-2" />
+                </Label>
 
-                <label className="flex flex-col">
+                <Label className="flex flex-col">
                   <span className="text-sm font-medium">Star Rating</span>
-                  <input name="starRating" value={formData.starRating} onChange={handleChange} inputMode="numeric" className="border rounded px-3 py-2" />
-                </label>
+                  <Input name="starRating" value={formData.starRating} onChange={handleChange} inputMode="numeric" className="border rounded px-3 py-2" />
+                </Label>
               </div>
 
-              <label className="flex flex-col">
+              <Label className="flex flex-col">
                 <span className="text-sm font-medium">Details</span>
                 <textarea name="details" value={formData.details} onChange={handleChange} className="border rounded px-3 py-2" />
-              </label>
+              </Label>
 
               <div className="grid grid-cols-1">
-                <label className="flex flex-col">
+                <Label className="flex flex-col">
                   <span className="text-sm font-medium">Upload Image</span>
-                  <input type="file" accept="image/*" onChange={handleFileChange} className="border rounded px-3 py-2" />
+                  <Input type="file" accept="image/*" onChange={handleFileChange} className="border rounded px-3 py-2" />
                   <p className="text-xs text-gray-500 mt-1">Choose a new image to upload (optional).</p>
-                </label>
+                </Label>
               </div>
 
               {imagePreview ? (
@@ -563,25 +564,25 @@ export default function HotelsPage() {
               <fieldset className="border p-3 rounded">
                 <legend className="text-sm font-semibold">Pricing (flat keys)</legend>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
-                  <label className="flex flex-col"><span className="text-xs">CP Price</span><input name="pricing.cpPrice" value={formData.pricing.cpPrice} onChange={handleChange} inputMode="numeric" className="border rounded px-2 py-2" /></label>
-                  <label className="flex flex-col"><span className="text-xs">AP Price</span><input name="pricing.apPrice" value={formData.pricing.apPrice} onChange={handleChange} inputMode="numeric" className="border rounded px-2 py-2" /></label>
-                  <label className="flex flex-col"><span className="text-xs">MAP Price</span><input name="pricing.mapPrice" value={formData.pricing.mapPrice} onChange={handleChange} inputMode="numeric" className="border rounded px-2 py-2" /></label>
-                  <label className="flex flex-col"><span className="text-xs">Room Price (₹)</span><input name="pricing.roomPrice" value={formData.pricing.roomPrice} onChange={handleChange} inputMode="numeric" className="border rounded px-2 py-2" /></label>
-                  <label className="flex flex-col"><span className="text-xs">Extra Bed Price (₹)</span><input name="pricing.extraBedPrice" value={formData.pricing.extraBedPrice} onChange={handleChange} inputMode="numeric" className="border rounded px-2 py-2" /></label>
+                  <Label className="flex flex-col"><span className="text-xs">CP Price</span><input name="pricing.cpPrice" value={formData.pricing.cpPrice} onChange={handleChange} inputMode="numeric" className="border rounded px-2 py-2" /></Label>
+                  <Label className="flex flex-col"><span className="text-xs">AP Price</span><input name="pricing.apPrice" value={formData.pricing.apPrice} onChange={handleChange} inputMode="numeric" className="border rounded px-2 py-2" /></Label>
+                  <Label className="flex flex-col"><span className="text-xs">MAP Price</span><input name="pricing.mapPrice" value={formData.pricing.mapPrice} onChange={handleChange} inputMode="numeric" className="border rounded px-2 py-2" /></Label>
+                  <Label className="flex flex-col"><span className="text-xs">Room Price (₹)</span><input name="pricing.roomPrice" value={formData.pricing.roomPrice} onChange={handleChange} inputMode="numeric" className="border rounded px-2 py-2" /></Label>
+                  <Label className="flex flex-col"><span className="text-xs">Extra Bed Price (₹)</span><input name="pricing.extraBedPrice" value={formData.pricing.extraBedPrice} onChange={handleChange} inputMode="numeric" className="border rounded px-2 py-2" /></Label>
                 </div>
               </fieldset>
 
               <div className="flex justify-end gap-3 pt-4 border-t">
-                <button type="button" onClick={() => { setHotelToUpdate(null); setFormData(initialForm); setImageFile(null); setImagePreview(""); }} className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300">
+                <Button type="button" onClick={() => { setHotelToUpdate(null); setFormData(initialForm); setImageFile(null); setImagePreview(""); }} className="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-700">
                   Cancel
-                </button>
-                <button type="submit" className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700">
+                </Button>
+                <Button type="submit" className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700">
                   Save Changes
-                </button>
+                </Button>
               </div>
             </form>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Create Modal */}

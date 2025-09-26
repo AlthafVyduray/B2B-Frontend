@@ -139,8 +139,12 @@ const useAdminStore = create((set, get) => ({
             
             set((state) => ({
                 bookings: state.bookings.map((booking) =>
-                booking._id == id ? res.data.booking : booking)
+                    booking._id === id 
+                    ? { ...res.data.booking, source: res.data.source } 
+                    : booking
+                )
             }));
+
             toast.success("Booking Edited Successfully")
         } catch (error) {
             toast.error(error.response?.data?.message || "Failed to Edit Booking");
@@ -170,6 +174,20 @@ const useAdminStore = create((set, get) => ({
             toast.success(res.data.message || "Booking confirmed successfully");
         } catch (error) {
             toast.error(error.response?.data?.message || "Failed to confirm booking");
+        }
+    },
+
+    cancelBooking: async (id) => {
+        try {
+            const res = await axiosInstance.put(`/admin/booking-details/cancel/${id}`);
+           set((state) => ({
+                bookings: state.bookings.map(booking =>
+                    booking._id === id ? { ...booking, status: "cancelled" } : booking
+                ),
+           }));
+            toast.success(res.data.message || "Booking cancelled successfully");
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Failed to cancel booking");
         }
     },
 
@@ -452,13 +470,14 @@ const useAdminStore = create((set, get) => ({
     //Packages
 
     packages: [],
+    defaultPackages: [],
     loadPackages: false,
 
     getPackages: async () => {
         set({ loadPackages: true });
         try {
             const res = await axiosInstance.get("/admin/packages");
-            set({ packages: res.data.packages });
+            set({ packages: res.data.packages, defaultPackages: res.data.defaultPackages });
         } catch (error) {
             toast.error(error.response?.data?.message || "Failed to load Packages");
         } finally {

@@ -8,6 +8,7 @@ const useBookingStore = create((set, get) => ({
 
     vehicles: [],
     packages: [],
+    defaultPackages: [],
 
     getVehicles: async () => {
         try {
@@ -22,7 +23,7 @@ const useBookingStore = create((set, get) => ({
     getPackages: async () => {
         try {
             const res = await axiosInstance.get("/booking/all-packages");
-            set({ packages: res.data.data });
+            set({ packages: res.data.packages, defaultPackages: res.data.defaultPackages });
         } catch (error) {
             set({ packages: [] });
             toast.error(error.response?.data?.message || "Failed to fetch Packages");
@@ -53,7 +54,17 @@ const useBookingStore = create((set, get) => ({
             toast.success("Booking Completed You Can Check on Notifications")
         } catch (error) {
             set({ packages: [] });
-            toast.error(error.response?.data?.message || "Failed to fetch Packages");
+            toast.error(error.response?.data?.message || "Failed to Book Package");
+        }
+    },
+
+    createDefaultBooking: async (form) => {
+        try{
+            const res = await axiosInstance.post("/booking/book-default-package", form);
+            toast.success("Booking Completed You Can Check on Notifications")
+        } catch (error) {
+            set({ packages: [] });
+            toast.error(error.response?.data?.message || "Failed to Book Package");
         }
     },
 

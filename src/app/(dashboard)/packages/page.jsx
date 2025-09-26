@@ -21,17 +21,25 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import Header from "@/app/components/admin/Hearder"
+import DefaultPackageForm from "./DefaultPackageForm"
+import UpdateDefaultPackageForm from "./UpdateDefaultPackageForm"
+import ViewPackage from "./ViewPackage"
+import CreateNormalPackage from "./CreateNormalPackage"
+import UpdateNormalPackage from "./UpdateNormalPackage"
+import DeletePackage from "./DeletePackage"
 
 
 export default function PackagesPage() {
 
-  const { getPackages, packages = [], updatePackage, deletePackage, createPackage } = useAdminStore();
+  const onClose = () => {
+    setToEditDefault(null)
+  } 
 
-  useEffect(() => {
-    if (typeof getPackages === "function") getPackages();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const onCloseCreateForm = () => {
+    setCreateDefaultPackage(null)
+  }
 
+  
   // --- Helpers ---
   const makeId = () =>
     typeof crypto !== "undefined" && crypto.randomUUID
@@ -41,6 +49,27 @@ export default function PackagesPage() {
   const PLACEHOLDER_SVG = `data:image/svg+xml;utf8,${encodeURIComponent(
     `<svg xmlns="http://www.w3.org/2000/svg" width="160" height="100"><rect width="100%" height="100%" fill="#f3f4f6"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#9ca3af">No Image</text></svg>`
   )}`;
+
+  const [editForm, setEditForm] = useState({
+    package_name: "",
+    place: "",
+    nights: "",
+    days: 1,
+    price: "",
+  });
+
+  const [editItineraries, setEditItineraries] = useState([
+    { id: makeId(), day_number: 1, description: "", file: null, preview: "", existingImage: "" },
+  ]);
+
+  const { getPackages, packages, updatePackage, deletePackage, createPackage, defaultPackages } = useAdminStore();
+
+  useEffect(() => {
+    if (typeof getPackages === "function") getPackages();
+  
+  }, []);
+
+
 
   // --- Normalized packages state (ensures stable ids/day_numbers) ---
   const [normalizedPackages, setNormalizedPackages] = useState([]);
@@ -85,23 +114,18 @@ export default function PackagesPage() {
   ]);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  
+  const [selectedPackage, setSelectedPackage] = useState(null);
   const [createdPackage, setCreatedPackage] = useState(false);
-  const [selectedPackage, setSelectedPackage] = useState(null)
-  // --- Edit form states ---
+  const [createDefaultPackage, setCreateDefaultPackage] = useState(false)
   const [toDelete, setToDelete] = useState(null);
-  const [toEdit, setToEdit] = useState(null); // full package object being edited
-  const [editForm, setEditForm] = useState({
-    package_name: "",
-    place: "",
-    nights: "",
-    days: 1,
-    price: "",
-  });
-  const [editItineraries, setEditItineraries] = useState([
-    { id: makeId(), day_number: 1, description: "", file: null, preview: "", existingImage: "" },
-  ]);
+  const [toEdit, setToEdit] = useState(null);
+  const [toEditDefault, setToEditDefault] = useState(null)
+  
+    // --- Edit form states ---
   const [editErrors, setEditErrors] = useState({});
   const [editingSubmitting, setEditingSubmitting] = useState(false);
+
 
   // --- Sync create itineraries with days ---
   useEffect(() => {
@@ -118,7 +142,7 @@ export default function PackagesPage() {
       }
       return next.map((it, idx) => ({ ...it, day_number: idx + 1 }));
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+ 
   }, [form.days]);
 
   // --- Populate editForm & editItineraries when toEdit changes ---
@@ -481,131 +505,8 @@ export default function PackagesPage() {
     }
   };
 
-
-  // const [searchTerm, setSearchTerm] = useState("")
-  // const [filterType, setFilterType] = useState("all")
-  // const [filterDuration, setFilterDuration] = useState("all")
-
-  // Sample data
-  // const packages = [
-  //   {
-  //     id: 1,
-  //     name: "2 NIGHT 3 DAY",
-  //     duration: "2 Nights / 3 Days",
-  //     price: 1100,
-  //     currency: "₹",
-  //     type: "Adventure",
-  //     destination: "Kerala Backwaters",
-  //     rating: 4.5,
-  //     bookings: 45,
-  //     status: "active",
-  //     image:
-  //       "https://www.bsr.org/images/heroes/bsr-travel-hero..jpg",
-  //     itinerary: [
-  //       {
-  //         day: 1,
-  //         title: "Arrival & Houseboat Check-in",
-  //         description: "Pleasant vibe with traditional Kerala welcome",
-  //       },
-  //       {
-  //         day: 2,
-  //         title: "Backwater Cruise",
-  //         description: "Pleasant vibe exploring local villages and wildlife",
-  //       },
-  //       {
-  //         day: 3,
-  //         title: "Departure",
-  //         description: "Morning cruise and checkout",
-  //       },
-  //     ],
-  //     inclusions: [
-  //       "Houseboat Stay",
-  //       "All Meals",
-  //       "Sightseeing",
-  //       "Transportation",
-  //     ],
-  //     highlights: [
-  //       "Backwater Cruise",
-  //       "Traditional Cuisine",
-  //       "Village Tours",
-  //       "Wildlife Spotting",
-  //     ],
-  //   },
-  //   {
-  //     id: 2,
-  //     name: "1NIGHT 2DAY",
-  //     duration: "1 Night / 2 Days",
-  //     price: 1100,
-  //     currency: "₹",
-  //     type: "Weekend Getaway",
-  //     destination: "Munnar Hills",
-  //     rating: 4.2,
-  //     bookings: 32,
-  //     status: "active",
-  //     image:
-  //       "https://d3d5bpai12ti8.cloudfront.net/wp-content/uploads/20200911134852/Rajasthan-Approves-New-Tourism-Policy-With-Focus-On-Lesser-known-Destinations.jpg",
-  //     itinerary: [
-  //       {
-  //         day: 1,
-  //         title: "Hill Station Arrival",
-  //         description: "Scenic drive through tea plantations and check-in",
-  //       },
-  //       {
-  //         day: 2,
-  //         title: "Sightseeing & Departure",
-  //         description:
-  //           "Visit viewpoints and local attractions before departure",
-  //       },
-  //     ],
-  //     inclusions: [
-  //       "Hotel Stay",
-  //       "Breakfast",
-  //       "Sightseeing",
-  //       "Transportation",
-  //     ],
-  //     highlights: [
-  //       "Tea Gardens",
-  //       "Mountain Views",
-  //       "Cool Climate",
-  //       "Photography",
-  //     ],
-  //   },
-  // ]
-
-  // const filteredPackages = packages.filter((pkg) => {
-  //   const matchesSearch =
-  //     pkg.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  //     pkg.destination.toLowerCase().includes(searchTerm.toLowerCase())
-  //   const matchesType =
-  //     filterType === "all" ||
-  //     pkg.type.toLowerCase() === filterType.toLowerCase()
-  //   const matchesDuration =
-  //     filterDuration === "all" ||
-  //     (filterDuration === "short" && pkg.duration.includes("1")) ||
-  //     pkg.duration.includes("2") ||
-  //     (filterDuration === "medium" &&
-  //       (pkg.duration.includes("3") || pkg.duration.includes("4"))) ||
-  //     (filterDuration === "long" &&
-  //       (pkg.duration.includes("5") || pkg.duration.includes("6")))
-
-  //   return matchesSearch && matchesType && matchesDuration
-  // })
-
-  // const stats = {
-  //   total: packages.length,
-  //   active: packages.filter((p) => p.status === "active").length,
-  //   totalBookings: packages.reduce((sum, p) => sum + p.bookings, 0),
-  //   avgRating: (
-  //     packages.reduce((sum, p) => sum + p.rating, 0) / packages.length
-  //   ).toFixed(1),
-  // }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex lg:mt-0 mt-10">
-        {/* <div>
-                  <Sidebar active="Destinations" />
-
-        </div> */}
 
       <main className="flex-1 flex flex-col">
         <Header />
@@ -624,112 +525,118 @@ export default function PackagesPage() {
               <Plus className="w-4 h-4 mr-2" />
               Add Package
             </Button>
+            <Button onClick={() => setCreateDefaultPackage(true)} className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:opacity-90 text-white shadow-md rounded-lg">
+              <Plus className="w-4 h-4 mr-2" />
+              Add Default Package
+            </Button>
           </div>
 
-          {/* Stats Cards */}
-          {/* <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {[
-              {
-                title: "Total Packages",
-                value: stats.total,
-                icon: <MapPin className="w-6 h-6 text-blue-600" />,
-                color: "from-blue-50 to-blue-100",
-              },
-              {
-                title: "Active Packages",
-                value: stats.active,
-                icon: <Calendar className="w-6 h-6 text-green-600" />,
-                color: "from-green-50 to-green-100",
-              },
-              {
-                title: "Total Bookings",
-                value: stats.totalBookings,
-                icon: <Users className="w-6 h-6 text-purple-600" />,
-                color: "from-purple-50 to-purple-100",
-              },
-              {
-                title: "Avg Rating",
-                value: stats.avgRating,
-                icon: <Star className="w-6 h-6 text-yellow-600" />,
-                color: "from-yellow-50 to-yellow-100",
-              },
-            ].map((stat, i) => (
+          <h1>Default Packages</h1>
+          {/* Packages Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {defaultPackages.map((pkg) => (
               <Card
-                key={i}
-                className="hover:shadow-xl transition-shadow rounded-2xl border-0 bg-white"
+                key={pkg._id}
+                className="overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border-0 bg-white"
               >
+
                 <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
+                  <div className="flex justify-between items-start mb-4">
                     <div>
-                      <p className="text-sm font-medium text-gray-600">
-                        {stat.title}
+                      <h3 className="text-xl font-bold text-gray-900 mb-1">
+                        {pkg.package_name}
+                      </h3>
+                      
+                      <p className="text-gray-600 flex items-center">
+                        <MapPin className="w-4 h-4 mr-1 text-blue-500" />
+                        {pkg.place}
                       </p>
-                      <p className="text-2xl font-bold text-gray-900">
-                        {stat.value}
+
+                      <p>Departure: {pkg.departure}</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-small text-blue-600">
+                        <p>Adult: ${pkg?.pricing?.adult.toLocaleString()}</p>
+                        <p>Child With Bed: ${pkg?.pricing?.childWithBed.toLocaleString()}</p>
+                        <p>Child Without Bed: ${pkg?.pricing?.childWithoutBed.toLocaleString()}</p>
+                        <p>Infant: ${pkg?.pricing?.infant.toLocaleString()}</p>
+                      </div>
+                      <p className="text-sm text-gray-500">
+                        {pkg.days}
                       </p>
                     </div>
-                    <div
-                      className={`p-3 bg-gradient-to-br ${stat.color} rounded-full shadow`}
+                  </div>
+
+                  {/* Itinerary Preview */}
+                  <div className="mb-4">
+                    <h4 className="font-semibold text-gray-900 mb-2">
+                      Itinerary Highlights
+                    </h4>
+                    <div className="space-y-2">
+                      {pkg.itineraries.slice(0, 2).map((it) => (
+                        <div
+                          key={it._id}
+                          className="flex flex-col items-center gap-3"
+                        >
+                          <div className="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-bold">
+                            {it.day_number}
+                          </div>
+                          <img
+                            src={it.image || "/placeholder.svg"}
+                            alt={it.day_number}
+                            className="w-full h-56 object-cover transform group-hover:scale-105 transition-transform duration-300"
+                          />
+                          <div>
+                            <p className="text-xs text-gray-600">
+                              {it.description}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                      {pkg.itineraries.length > 2 && (
+                        <p className="text-xs text-blue-600 ml-9 font-medium">
+                          +{pkg.itineraries.length - 2} more days...
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+
+                  {/* Actions */}
+                  <div className="flex gap-2 pt-4 border-t">
+                    <Button
+                      onClick={() => setSelectedPackage(pkg)}
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 rounded-lg hover:bg-blue-50"
                     >
-                      {stat.icon}
-                    </div>
+                      <Eye className="w-4 h-4 mr-2" />
+                      View
+                    </Button>
+                    <Button
+                      onClick={() => setToEditDefault(pkg) }
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 rounded-lg hover:bg-yellow-50"
+                    >
+                      <Edit className="w-4 h-4 mr-2" />
+                      Edit
+                    </Button>
+                    <Button
+                      onClick={() => setToDelete(pkg)}
+                      variant="outline"
+                      size="sm"
+                      className="rounded-lg text-red-600 hover:bg-red-50"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
             ))}
-          </div> */}
+          </div>
 
-          {/* Filters */}
-          {/* <Card className="border-0 shadow-md rounded-2xl">
-            <CardContent className="p-6">
-              <div className="flex flex-col lg:flex-row gap-4">
-                <div className="flex-1">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <Input
-                      placeholder="Search packages or destinations..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-
-                <Select value={filterType} onValueChange={setFilterType}>
-                  <SelectTrigger className="w-full lg:w-48 rounded-lg">
-                    <Filter className="w-4 h-4 mr-2" />
-                    <SelectValue placeholder="Package Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="adventure">Adventure</SelectItem>
-                    <SelectItem value="cultural">Cultural</SelectItem>
-                    <SelectItem value="beach">Beach</SelectItem>
-                    <SelectItem value="weekend getaway">
-                      Weekend Getaway
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select
-                  value={filterDuration}
-                  onValueChange={setFilterDuration}
-                >
-                  <SelectTrigger className="w-full lg:w-48 rounded-lg">
-                    <Clock className="w-4 h-4 mr-2" />
-                    <SelectValue placeholder="Duration" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Durations</SelectItem>
-                    <SelectItem value="short">1-2 Days</SelectItem>
-                    <SelectItem value="medium">3-4 Days</SelectItem>
-                    <SelectItem value="long">5+ Days</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card> */}
-
+          <h1>Normal Packages</h1>
           {/* Packages Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {packages.map((pkg) => (
@@ -835,9 +742,6 @@ export default function PackagesPage() {
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
                   No packages found
                 </h3>
-                <p className="text-gray-600">
-                  Try adjusting your search or filter criteria
-                </p>
               </CardContent>
             </Card>
           )}
@@ -846,323 +750,32 @@ export default function PackagesPage() {
 
       {/* Delete Confirmation Modal */}
       {toDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md border border-gray-200">
-            <div className="flex items-center justify-between px-5 py-4 border-b">
-              <h3 className="text-lg font-semibold">Confirm Delete</h3>
-              <button onClick={() => setToDelete(null)} className="p-1">
-                <X size={20} />
-              </button>
-            </div>
-            <div className="p-5">
-              <p className="text-gray-700 mb-4">
-                Are you sure you want to delete <strong>{toDelete.package_name}</strong>? This action cannot be undone.
-              </p>
-              <div className="flex justify-end gap-3">
-                <button onClick={() => setToDelete(null)} className="px-4 py-2 rounded bg-gray-100">
-                  Cancel
-                </button>
-                <button onClick={() => confirmDelete(toDelete)} className="px-4 py-2 rounded bg-red-600 text-white">
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <DeletePackage toDelete={toDelete} setToDelete={setToDelete} confirmDelete={confirmDelete} />
       )}
 
-      {/* Edit Modal (full form like Create) */}
+      {/* Edit Normal Package */}
       {toEdit && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl border border-gray-200 flex flex-col max-h-[90vh]">
-            <form onSubmit={submitEdit} className="flex-1 overflow-y-auto p-6 space-y-6">
-              <div className="flex items-center justify-between">
-                <h3 className="text-2xl font-semibold">Edit Package</h3>
-                <button
-                  type="button"
-                  onClick={() => closeEditModal()}
-                  className="p-1"
-                  aria-label="Close"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Package Name</label>
-                <input name="package_name" value={editForm.package_name} onChange={handleEditFormChange} className="mt-2 w-full border rounded px-3 py-2" placeholder="Enter package name" />
-                {editErrors.package_name && <p className="text-xs text-red-500 mt-1">{editErrors.package_name}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Place</label>
-                <input name="place" value={editForm.place} onChange={handleEditFormChange} className="mt-2 w-full border rounded px-3 py-2" placeholder="Enter place" />
-                {editErrors.place && <p className="text-xs text-red-500 mt-1">{editErrors.place}</p>}
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Nights</label>
-                  <input name="nights" value={editForm.nights} onChange={handleEditFormChange} className="mt-2 w-full border rounded px-3 py-2" placeholder="Enter nights" inputMode="numeric" />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Days</label>
-                  <input
-                    name="days"
-                    value={editForm.days}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      const num = Number(val);
-                      setEditForm((p) => ({ ...p, days: val === "" ? val : Math.max(1, Math.floor(num || 0)) }));
-                    }}
-                    className="mt-2 w-full border rounded px-3 py-2"
-                    inputMode="numeric"
-                  />
-                  {editErrors.days && <p className="text-xs text-red-500 mt-1">{editErrors.days}</p>}
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700">Price (₹)</label>
-                  <input name="price" value={editForm.price} onChange={handleEditFormChange} className="mt-2 w-full border rounded px-3 py-2" inputMode="numeric" />
-                  {editErrors.price && <p className="text-xs text-red-500 mt-1">{editErrors.price}</p>}
-                </div>
-              </div>
-
-              {/* Itinerary Editor */}
-              <div>
-                <h3 className="font-semibold text-gray-800 mb-3">Itinerary</h3>
-                <div className="space-y-4">
-                  {editItineraries.map((it, idx) => (
-                    <div key={it.id} className="border rounded p-4">
-                      <div className="flex justify-between items-center mb-3">
-                        <div className="font-medium">Day {String(idx + 1).padStart(2, "0")}</div>
-                      </div>
-
-                      <label className="block mb-2">
-                        <div className="text-sm text-gray-700 mb-1">Description</div>
-                        <textarea value={it.description} onChange={(e) => handleEditItineraryDescChange(idx, e.target.value)} placeholder={`Enter description for Day ${idx + 1}`} className="w-full border rounded px-3 py-2" rows={3} />
-                        {editErrors[`it_${idx}`] && <p className="text-xs text-red-500 mt-1">{editErrors[`it_${idx}`]}</p>}
-                      </label>
-
-                      <label className="block">
-                        <div className="text-sm text-gray-700 mb-1">Day {String(idx + 1).padStart(2, "0")} Image</div>
-                        <input type="file" accept="image/*" onChange={(e) => handleEditItineraryFileChange(idx, e.target.files?.[0] ?? null)} className="w-full" />
-                        {editErrors[`file_${idx}`] && <p className="text-xs text-red-500 mt-1">{editErrors[`file_${idx}`]}</p>}
-                      </label>
-
-                      {it.preview ? (
-                        <div className="mt-3 w-48 border rounded p-1">
-                          <img
-                            src={it.preview || PLACEHOLDER_SVG}
-                            alt={`Day ${idx + 1} preview`}
-                            className="w-full h-32 object-cover rounded"
-                            onError={(e) => {
-                              const img = e.currentTarget;
-                              if (!img.dataset.fallback) {
-                                img.dataset.fallback = "1";
-                                img.src = PLACEHOLDER_SVG;
-                              }
-                            }}
-                          />
-                        </div>
-                      ) : null}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Footer actions */}
-              <div className="flex gap-3 justify-end p-4 border-t">
-                <button type="button" onClick={() => closeEditModal()} className="px-4 py-2 rounded bg-gray-200" disabled={editingSubmitting}>
-                  Cancel
-                </button>
-                <button type="submit" className="px-4 py-2 rounded bg-blue-600 text-white" disabled={editingSubmitting}>
-                  {editingSubmitting ? "Saving..." : "Save Changes"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <UpdateNormalPackage toEdit={toEdit} editForm={editForm} setEditForm={setEditForm} editItineraries={editItineraries} setEditItineraries={setEditItineraries} editErrors={editErrors} setEditErrors={setEditErrors} closeEditModal={closeEditModal} />
       )}
 
-      {/* Create Modal */}
+      {/* Create Normal Package */}
       {createdPackage && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg border border-gray-200 flex flex-col max-h-[90vh]">
-            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
-              <div className="flex items-center justify-between">
-                <h3 className="text-2xl font-semibold">Add Package</h3>
-                <button
-                  type="button"
-                  onClick={() => {
-                    itineraries.forEach((it) => {
-                      if (it.preview && it.preview.startsWith("blob:")) URL.revokeObjectURL(it.preview);
-                    });
-                    setCreatedPackage(false);
-                  }}
-                  className="p-1"
-                  aria-label="Close"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Package Name</label>
-                <input name="package_name" value={form.package_name} onChange={handleFormChange} className="mt-2 w-full border rounded px-3 py-2" placeholder="Enter package name" />
-                {errors.package_name && <p className="text-xs text-red-500 mt-1">{errors.package_name}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Place</label>
-                <input name="place" value={form.place} onChange={handleFormChange} className="mt-2 w-full border rounded px-3 py-2" placeholder="Enter place" />
-                {errors.place && <p className="text-xs text-red-500 mt-1">{errors.place}</p>}
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Nights</label>
-                  <input name="nights" value={form.nights} onChange={handleFormChange} className="mt-2 w-full border rounded px-3 py-2" placeholder="Enter nights" inputMode="numeric" />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Days</label>
-                  <input name="days" value={form.days} onChange={(e) => { const val = e.target.value; const num = Number(val); setForm((p) => ({ ...p, days: val === "" ? val : Math.max(1, Math.floor(num || 0)) })); }} className="mt-2 w-full border rounded px-3 py-2" inputMode="numeric" />
-                  {errors.days && <p className="text-xs text-red-500 mt-1">{errors.days}</p>}
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700">Price (₹)</label>
-                  <input name="price" value={form.price} onChange={handleFormChange} className="mt-2 w-full border rounded px-3 py-2" inputMode="numeric" />
-                  {errors.price && <p className="text-xs text-red-500 mt-1">{errors.price}</p>}
-                </div>
-              </div>
-
-              <div>
-                <h3 className="font-semibold text-gray-800 mb-3">Itinerary</h3>
-                <div className="space-y-4">
-                  {itineraries.map((it, idx) => (
-                    <div key={it.id} className="border rounded p-4">
-                      <div className="flex justify-between items-center mb-3">
-                        <div className="font-medium">Day {String(idx + 1).padStart(2, "0")}</div>
-                      </div>
-
-                      <label className="block mb-2">
-                        <div className="text-sm text-gray-700 mb-1">Description</div>
-                        <textarea value={it.description} onChange={(e) => handleItineraryDescChange(idx, e.target.value)} placeholder={`Enter description for Day ${idx + 1}`} className="w-full border rounded px-3 py-2" rows={3} />
-                        {errors[`it_${idx}`] && <p className="text-xs text-red-500 mt-1">{errors[`it_${idx}`]}</p>}
-                      </label>
-
-                      <label className="block">
-                        <div className="text-sm text-gray-700 mb-1">Day {String(idx + 1).padStart(2, "0")} Image</div>
-                        <input type="file" accept="image/*" onChange={(e) => handleItineraryFileChange(idx, e.target.files?.[0] ?? null)} className="w-full" />
-                        {errors[`file_${idx}`] && <p className="text-xs text-red-500 mt-1">{errors[`file_${idx}`]}</p>}
-                      </label>
-
-                      {it.preview ? (
-                        <div className="mt-3 w-48 border rounded p-1">
-                          <img
-                            src={it.preview || PLACEHOLDER_SVG}
-                            alt={`Day ${idx + 1} preview`}
-                            className="w-full h-32 object-cover rounded"
-                            onError={(e) => {
-                              const img = e.currentTarget;
-                              if (!img.dataset.fallback) {
-                                img.dataset.fallback = "1";
-                                img.src = PLACEHOLDER_SVG;
-                              }
-                            }}
-                          />
-                        </div>
-                      ) : null}
-                    </div>
-                  ))}
-                </div>
-                {errors.files && <p className="text-xs text-red-500 mt-2">{errors.files}</p>}
-              </div>
-
-              <div className="flex gap-3 justify-end p-4 border-t">
-                <button type="button" onClick={() => { itineraries.forEach((it) => { if (it.preview && it.preview.startsWith("blob:")) URL.revokeObjectURL(it.preview); }); setForm({ package_name: "", place: "", nights: "", days: 1, price: "" }); setItineraries([{ id: makeId(), day_number: 1, description: "", file: null, preview: "", existingImage: "" }]); setErrors({}); setCreatedPackage(false); }} className="px-4 py-2 rounded bg-gray-200" disabled={submitting}>Cancel</button>
-                <button type="submit" className="px-4 py-2 rounded bg-blue-600 text-white" disabled={submitting}>{submitting ? "Saving..." : "Add Package"}</button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <CreateNormalPackage />
       )}
 
+      {/* View Both Packages */}
       {selectedPackage && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl border border-gray-200 flex flex-col max-h-[90vh]">
-            <CardContent className="px-10 p-6 overflow-y-auto">
-              <div className="flex justify-between mb-5">
-                <h3 className="text-xl font-bold text-gray-900 mb-1">
-                  {selectedPackage?.package_name}
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedPackage(null);
-                  }}
-                  className="p-1 self-end text-red-500"
-                  aria-label="Close"
-                >
-                  <X size={20} />
-                </button>
+        <ViewPackage selectedPackage={selectedPackage} packages={packages} setSelectedPackage={setSelectedPackage} />
+      )}
+      
+      {/* Create Default Package */}
+      {createDefaultPackage && (
+        <DefaultPackageForm onCloseCreateForm={onCloseCreateForm} />
+      )}
 
-              </div>
-              <div className="mb-4 flex justify-between items-center">
-                  <p className="text-gray-600 flex items-center">
-                    <MapPin className="w-4 h-4 mr-1 text-blue-500" />
-                    {selectedPackage?.place}
-                  </p>
-
-                  <div className="text-right">
-                    <p className="text-2xl font-extrabold text-blue-600">
-                      ${((selectedPackage?.price ?? 0)).toLocaleString()}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {selectedPackage?.days} Days
-                    </p>
-                  </div>
-                </div>
-
-              {/* Itinerary Preview */}
-              <div className="mb-4">
-                <h4 className="font-semibold text-gray-900 mb-2">
-                  Itinerary Highlights
-                </h4>
-                <div className="space-y-2">
-                  {selectedPackage?.itineraries?.map((it) => (
-                    <div
-                      key={it?._id}
-                      className="flex flex-col items-center gap-3"
-                    >
-                      <div className="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-bold">
-                        {it?.day_number}
-                      </div>
-                      <img
-                        src={it?.image || "/placeholder.svg"}
-                        alt={String(it?.day_number ?? "")}
-                        className="w-full h-56 object-cover transform group-hover:scale-105 transition-transform duration-300"
-                      />
-                      <div>
-                        <p className="text-xs text-gray-600">
-                          {it?.description}
-                        </p>
-                      </div>
-                    </div>
-                  )) ?? null}
-                </div>
-              </div>
-              <div className="flex gap-3 justify-end p-4 border-t">
-                <button type="button" onClick={() => setSelectedPackage(null)} className="px-4 py-2 rounded bg-red-500">
-                  Cancel
-                </button>
-              </div>
-            </CardContent>
-          </div>
-        </div>
+      {/* Edit Default Package */}
+      {toEditDefault && (
+        <UpdateDefaultPackageForm toEditDefault={toEditDefault} onClose={onClose} />
       )}
 
     </div>

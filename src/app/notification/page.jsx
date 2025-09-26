@@ -11,12 +11,15 @@ import Header from "../components/admin/Hearder"
 export default function NotificationPage() {
 
   const [selection, setSelection] = useState("notification")
-  const { notifications, getAdminNotifications, bookings, getBookings } = useBookingStore()
+  const { notifications, getAdminNotifications, bookings, getBookings, packages, getPackages, defaultPackages, hotels, getHotelsByRating } = useBookingStore()
 
   useEffect(() => {
     getAdminNotifications()
     getBookings()
-  }, [getAdminNotifications, getBookings])
+    getPackages()
+    getHotelsByRating(2)
+  }, [getAdminNotifications, getBookings, getPackages])
+
 
   const getTypeIcon = (type) => {
     switch (type) {
@@ -42,134 +45,445 @@ export default function NotificationPage() {
     })
   }
 
-  // Generate a plain-text PDF using jsPDF (no DOM/CSS rendering)
-  const generatePdf = async (booking) => {
-    try {
-      const { jsPDF } = await import("jspdf")
-      const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" })
-      const pageWidth = doc.internal.pageSize.getWidth()
-      const pageHeight = doc.internal.pageSize.getHeight()
-      const margin = 15
-      const maxWidth = pageWidth - margin * 2
-      const lineHeight = 7
+ // generateBookingPdf.js
+// Improved, more professional layout for jsPDF (no DOM/CSS rendering)
+// Usage: await generatePdf(booking, { logoDataUrl })
 
-      let y = margin
+const generatePdf = async (booking, options = {}) => {
+  try {
 
-      const addWrappedText = (text, x = margin, startY = y, fontSize = 10, style = "normal") => {
-        doc.setFontSize(fontSize)
-        if (style === "bold") doc.setFont(undefined, "bold")
-        else doc.setFont(undefined, "normal")
 
-        const lines = doc.splitTextToSize(String(text), maxWidth)
-        for (const line of lines) {
-          if (startY + lineHeight > pageHeight - margin) {
-            doc.addPage()
-            startY = margin
-          }
-          doc.text(line, x, startY)
-          startY += lineHeight
+    // Helper to fetch image as Base64
+const fetchImageAsBase64 = async (url) => {
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    return await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.readAsDataURL(blob);
+    });
+  } catch (err) {
+    console.warn("Failed to fetch image:", url, err);
+    return null;
+  }
+};
+    const { jsPDF } = await import('jspdf');
+    const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 16;
+    const contentWidth = pageWidth - margin * 2;
+
+    let y = margin;
+
+    const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
+    const fmtCurrency = (amount) => amount != null ? `Rs. ${Number(amount).toLocaleString('en-IN')}` : '-';
+    const wrapLines = (text, maxWidth) => doc.splitTextToSize(String(text ?? '-'), Math.max(10, maxWidth));
+
+    const ensureSpace = (needed) => {
+      if (y + needed > pageHeight - margin - 20) {
+        doc.addPage();
+        y = margin;
+        renderHeader();
+        renderFooter();
+      }
+    };
+
+    // ================= HEADER & FOOTER =================
+    const renderHeader = () => {
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'bold');
+      doc.text(booking.package_name || 'Booking Details', pageWidth / 2, y, { align: 'center' });
+      y += 10;
+    };
+
+    const renderFooter = () => {
+      const footerY = pageHeight - 20;
+      doc.setFontSize(8);
+      doc.text(`Support: ${options.supportEmail || 'support@example.com'} | ${options.supportPhone || '+91 12345 67890'}`, margin, footerY);
+      doc.text(`Generated: ${new Date().toLocaleString()}`, pageWidth - margin, footerY, { align: 'right' });
+    };
+
+    const addSectionTitle = (title) => {
+      ensureSpace(8);
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'bold');
+      doc.text(title, margin, y);
+      y += 6;
+      doc.setDrawColor(200);
+      doc.line(margin, y, pageWidth - margin, y);
+      doc.setDrawColor(0);
+      y += 4;
+    };
+
+    const addInlineKV = (label, value) => {
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'bold');
+      const labelWidth = doc.getTextWidth(`${label}:`);
+      const valueX = margin + labelWidth + 4;
+      const lines = wrapLines(value, contentWidth - (valueX - margin));
+      ensureSpace(lines.length * 6);
+      doc.text(`${label}:`, margin, y);
+      doc.setFont(undefined, 'normal');
+      doc.text(lines, valueX, y);
+      y += lines.length * 6 + 2;
+    };
+
+    // ================= CONTENT =================
+    renderHeader();
+
+    addSectionTitle('Customer Details');
+    addInlineKV('Name', booking.contact?.name);
+    addInlineKV('Email', booking.contact?.email);
+    addInlineKV('Phone', booking.contact?.mobile_number);
+    addInlineKV('State', booking.contact?.state);
+
+    addSectionTitle('Package & Travel Dates');
+    addInlineKV('Package', booking.package_name);
+    addInlineKV('Pickup Date', fmtDate(booking.dates?.pickup_date));
+    addInlineKV('Pickup Time', booking.dates?.pickup_time ?? '-');
+    addInlineKV('Pickup Location', booking.dates?.pickup_location ?? '-');
+    addInlineKV('Drop Date', fmtDate(booking.dates?.drop_date));
+    addInlineKV('Drop Time', booking.dates?.drop_time ?? '-');
+    addInlineKV('Drop Location', booking.dates?.drop_location ?? '-');
+
+    addSectionTitle('Guests');
+    addInlineKV('Adults', booking.guests?.adults_total ?? 0);
+    addInlineKV('Children', booking.guests?.children ?? 0);
+    addInlineKV('Infants', booking.guests?.infants ?? 0);
+
+    addSectionTitle('Extras');
+    addInlineKV('Entry Ticket', booking.extras?.entry_ticket_needed ? 'Yes' : 'No');
+    addInlineKV('Snow World', booking.extras?.snow_world_needed ? 'Yes' : 'No');
+    addInlineKV('Breakfast', booking.extras?.breakfast ? 'Yes' : 'No');
+    addInlineKV('Lunch Veg', booking.extras?.lunchVeg ? 'Yes' : 'No');
+    addInlineKV('Lunch Non-Veg', booking.extras?.lunchNonVeg ? 'Yes' : 'No');
+    addInlineKV('Guide Needed', booking.extras?.guideNeeded ? 'Yes' : 'No');
+    if (booking.hotel_id) {
+      addSectionTitle('Hotel Details');
+      addInlineKV('Hotel', booking.hotel?.hotel_name ?? '-');
+      addInlineKV('Rooms', booking.hotel?.rooms ?? 0);
+      addInlineKV('Extra Beds', booking.hotel?.extra_beds ?? 0);
+      addInlineKV('Food Plan', booking.hotel?.food_plan ?? '-');
+
+      const hotel = hotels.find((h) => String(h._id) === String(booking.hotel_id));
+
+      if (hotel?.imageUrl) {
+        const base64Img = await fetchImageAsBase64(hotel.imageUrl);
+        if (base64Img) {
+          const imgHeight = 40; // fixed height
+          const imgWidth = contentWidth;
+          ensureSpace(imgHeight + 6);
+          doc.addImage(base64Img, "JPEG", margin, y, imgWidth, imgHeight);
+          y += imgHeight + 8;
         }
-        y = startY
-        return y
       }
+    }
+    
 
-      const addKV = (key, value) => {
-        addWrappedText(`${key}: ${value ?? "-"}`, margin, y, 10)
+    addSectionTitle('Payment Summary');
+    addInlineKV('Agent Commission', fmtCurrency(booking.pricing?.agent_commission));
+    addInlineKV('Base Total', fmtCurrency(booking.pricing?.base_total));
+    addInlineKV('Total Amount', fmtCurrency(booking.pricing?.total_amount));
+
+    // ================= ITINERARY =================
+   
+    
+
+// ================= ITINERARY =================
+const pkg = packages.find((pkg) => String(pkg._id) === String(booking.package_id));
+
+if (pkg && Array.isArray(pkg.itineraries) && pkg.itineraries.length) {
+  addSectionTitle("Itinerary");
+
+  for (const it of pkg.itineraries) {
+    const lineHeight = 6; // adjust as needed
+    const normalSize = 10;
+
+    ensureSpace(lineHeight * 3);
+
+    doc.setFontSize(normalSize);
+    doc.setFont(undefined, "bold");
+    doc.text(`Day ${it.day_number || '-'}`, margin, y);
+    y += lineHeight;
+
+    doc.setFont(undefined, "normal");
+    const descLines = wrapLines(it.description || "-", contentWidth);
+    doc.text(descLines, margin, y);
+    y += descLines.length * lineHeight + 2;
+
+    // Add image if available
+    if (it.image) {
+      const base64Img = await fetchImageAsBase64(it.image);
+      if (base64Img) {
+        const imgHeight = 40; // fixed height
+        const imgWidth = contentWidth;
+        ensureSpace(imgHeight + 6);
+        doc.addImage(base64Img, "JPEG", margin, y, imgWidth, imgHeight);
+        y += imgHeight + 8;
       }
-
-      // Header
-      addWrappedText("Booking Details", margin, y, 14, "bold")
-      y += 4
-      addKV("Booking ID", booking._id)
-      addKV("Created", formatTimestamp(booking.createdAt))
-      y += 4
-
-      // Package
-      addWrappedText("Package", margin, y, 12, "bold")
-      y += 6
-      if (booking.package_id) {
-        addKV("Name", booking.package_name)
-        addWrappedText(`Pickup: Date: ${booking.dates?.pickup_date ?? "-"}, Time: ${booking.dates?.pickup_time ?? "-"}, Location: ${booking.dates?.pickup_location ?? "-"}`, margin, y)
-        y += 4
-        addWrappedText(`Drop: Date: ${booking.dates?.drop_date ?? "-"}, Time: ${booking.dates?.drop_time ?? "-"}, Location: ${booking.dates?.drop_location ?? "-"}`, margin, y)
-      } else {
-        addWrappedText("No package selected", margin, y)
-      }
-      y += 8
-
-      // Travelers
-      addWrappedText("Travelers", margin, y, 12, "bold")
-      y += 6
-      addKV("Adults", booking.guests?.adults_total ?? 0)
-      addKV("Children", booking.guests?.children ?? 0)
-      addKV("Infants", booking.guests?.infants ?? 0)
-      y += 8
-
-      // Hotel
-      addWrappedText("Hotel", margin, y, 12, "bold")
-      y += 6
-      if (booking.hotel_id) {
-        addKV("Name", booking.hotel?.hotel_name)
-        addKV("Rooms", booking.hotel?.rooms)
-        addKV("Extra Beds", booking.hotel?.extra_beds ?? 0)
-        addKV("Food Plan", booking.hotel?.food_plan ?? "—")
-      } else {
-        addWrappedText("No hotel selected", margin, y)
-      }
-      y += 8
-
-      // Vehicle
-      addWrappedText("Vehicle", margin, y, 12, "bold")
-      y += 6
-      if (booking.vehicle_id) {
-        addKV("Vehicle", booking.vehicle_name ?? "—")
-      } else {
-        addWrappedText("No vehicle selected", margin, y)
-      }
-      y += 8
-
-      // Extras
-      addWrappedText("Extras", margin, y, 12, "bold")
-      y += 6
-      const foods = [booking.extras?.breakfast ? "Breakfast" : null, booking.extras?.lunchNonVeg ? "Lunch (Non-Veg)" : null, booking.extras?.lunchVeg ? "Lunch (Veg)" : null].filter(Boolean).join(", ") || "None"
-      addKV("Extra Food", foods)
-      addKV("Guide Needed", booking.extras?.guideNeeded ? "Yes" : "No")
-      addKV("Entry Ticket", booking.extras?.entry_ticket_needed ? "Yes" : "No")
-      addKV("Snow World Ticket", booking.extras?.snow_world_needed ? "Yes" : "No")
-      y += 8
-
-      // Summary
-      addWrappedText("Summary", margin, y, 12, "bold")
-      y += 6
-      addKV("Package Amount", booking.pricing?.base_total
-        ? `Rs. ${Number(booking.pricing.base_total).toLocaleString("en-IN")}`
-        : "—"
-      )
-
-      addKV("Agent Commission", booking.pricing?.agent_commission
-        ? `Rs. ${Number(booking.pricing.agent_commission).toLocaleString("en-IN")}`
-        : "—"
-      )
-
-      addKV("Total Amount", booking.pricing?.total_amount
-        ? `Rs. ${Number(booking.pricing.total_amount).toLocaleString("en-IN")}`
-        : "—"
-      )
-
-      y += 10
-
-      // Footer support
-      addWrappedText("Support: support@example.com | +91 12345 67890", margin, y, 9)
-      y += 6
-      addWrappedText(`Generated: ${formatTimestamp(new Date().toISOString())}`, margin, y, 9)
-
-      doc.save(`booking_${booking._id}.pdf`)
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error("PDF generation failed:", err)
-      alert("Could not generate PDF. See console for details.")
     }
   }
+}
+
+
+    renderFooter();
+
+    // Page numbers
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 8, { align: 'center' });
+    }
+
+    doc.save(`booking_${booking._id}.pdf`);
+  } catch (err) {
+    console.error('PDF generation failed:', err);
+  }
+};
+
+
+
+const generateDefaultPackagePdf = async (booking, packages = [], options = {}) => {
+  try {
+    const { jsPDF } = await import("jspdf");
+    const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 16;
+    const contentWidth = pageWidth - margin * 2;
+
+    // font sizes
+    const titleSize = 16;
+    const sectionTitleSize = 12;
+    const normalSize = 10;
+    const lineHeight = 6.8;
+    const labelGap = 4;
+
+    let y = margin;
+    doc.setProperties({ title: `DefaultPackageBooking_${booking._id}` });
+
+    // ===== Helpers =====
+    const fmtDate = (iso) => {
+      if (!iso) return "-";
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return iso;
+      return d.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+    };
+
+    const fmtDateTime = (iso) => {
+      if (!iso) return "-";
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return iso;
+      return d.toLocaleString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    };
+
+    const fmtCurrency = (amount) =>
+      amount != null && amount !== ""
+        ? `Rs. ${Number(amount).toLocaleString("en-IN")}`
+        : "—";
+
+    const ensureSpace = (needed) => {
+      if (y + needed > pageHeight - margin) {
+        doc.addPage();
+        y = margin;
+      }
+    };
+
+    const wrapLines = (text, maxWidth, fontSize = normalSize) => {
+      doc.setFontSize(fontSize);
+      doc.setFont(undefined, "normal");
+      return doc.splitTextToSize(String(text ?? "-"), Math.max(10, maxWidth));
+    };
+
+    const addInlineKV = (label, value) => {
+      const labelText = `${label}:`;
+      doc.setFontSize(normalSize);
+      doc.setFont(undefined, "bold");
+      const labelWidth = doc.getTextWidth(labelText);
+      const valueX = margin + labelWidth + labelGap;
+      const availWidth = contentWidth - (valueX - margin);
+      const lines = wrapLines(value, availWidth);
+      ensureSpace(lines.length * lineHeight);
+
+      doc.text(labelText, margin, y);
+      doc.setFont(undefined, "normal");
+      doc.text(lines, valueX, y);
+      y += lines.length * lineHeight + 2;
+    };
+
+    const addSectionTitle = (title) => {
+      ensureSpace(lineHeight + 6);
+      doc.setFontSize(sectionTitleSize);
+      doc.setFont(undefined, "bold");
+      doc.text(title, margin, y);
+      y += lineHeight;
+      doc.setDrawColor(200);
+      doc.line(margin, y - lineHeight / 3, pageWidth - margin, y - lineHeight / 3);
+      doc.setDrawColor(0);
+      y += 4;
+    };
+
+    // Helper to fetch image URL → base64
+    const fetchImageAsBase64 = async (url) => {
+      try {
+        const res = await fetch(url);
+        const blob = await res.blob();
+        return await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(blob);
+        });
+      } catch (err) {
+        console.error("Image fetch failed:", url, err);
+        return null;
+      }
+    };
+
+    // ====== Content ======
+    doc.setFontSize(titleSize);
+    doc.setFont(undefined, "bold");
+    doc.text(booking.package_name || "Default Package Booking", pageWidth / 2, y, {
+      align: "center",
+    });
+    y += 12;
+
+    addSectionTitle("Customer Details");
+    addInlineKV("Name", booking.contact?.name ?? "-");
+    addInlineKV("Email", booking.contact?.email ?? "-");
+    addInlineKV("Mobile", booking.contact?.mobile_number ?? "-");
+    addInlineKV("State", booking.contact?.state ?? "-");
+
+    addSectionTitle("Package Details");
+    addInlineKV("Package", booking.package_name ?? "-");
+
+    addSectionTitle("Outbound Journey");
+    addInlineKV("Pickup Date", fmtDate(booking.dates?.outbound?.pickup_date));
+    addInlineKV("Departure Time", fmtDateTime(booking.dates?.outbound?.departureTime));
+    addInlineKV("Arrival Time", fmtDateTime(booking.dates?.outbound?.arrivalTime));
+    addInlineKV("Flight", booking.dates?.outbound?.flight ?? "-");
+
+    addSectionTitle("Return Journey");
+    addInlineKV("Drop Date", fmtDate(booking.dates?.return?.drop_date));
+    addInlineKV("Departure Time", fmtDateTime(booking.dates?.return?.departureTime));
+    addInlineKV("Arrival Time", fmtDateTime(booking.dates?.return?.arrivalTime));
+    addInlineKV("Flight", booking.dates?.return?.flight ?? "-");
+
+    addSectionTitle("Travelers");
+    addInlineKV("Adults", booking.guests?.adults_total ?? 0);
+    addInlineKV("Children With Bed", booking.guests?.children_with_bed ?? 0);
+    addInlineKV("Children Without Bed", booking.guests?.children_without_bed ?? 0);
+    addInlineKV("Infants", booking.guests?.infants ?? 0);
+
+    addSectionTitle("Payment Summary");
+    const payRows = [
+      ["Base Amount", fmtCurrency(booking.pricing?.base_total)],
+      ["Agent Commission", fmtCurrency(booking.pricing?.agent_commission)],
+      ["Total Payable", fmtCurrency(booking.pricing?.total_amount)],
+    ];
+    for (const [label, amount] of payRows) {
+      ensureSpace(lineHeight);
+      doc.setFontSize(normalSize);
+      doc.setFont(undefined, label === "Total Payable" ? "bold" : "normal");
+      doc.text(label, margin, y);
+      doc.text(String(amount), pageWidth - margin, y, { align: "right" });
+      y += lineHeight;
+    }
+
+    addSectionTitle("Status");
+    addInlineKV("Booking Status", booking.status ?? "pending");
+
+    // ====== Itineraries ======
+    const pkg = defaultPackages.find((pkg) => String(pkg._id) === String(booking.package_id));
+  
+    if (pkg && Array.isArray(pkg.itineraries) && pkg.itineraries.length) {
+      addSectionTitle("Itinerary");
+      for (const it of pkg.itineraries) {
+        ensureSpace(lineHeight * 3);
+
+        doc.setFontSize(normalSize);
+        doc.setFont(undefined, "bold");
+        doc.text(`Day ${it.day_number}`, margin, y);
+        y += lineHeight;
+
+        doc.setFont(undefined, "normal");
+        const descLines = wrapLines(it.description, contentWidth);
+        doc.text(descLines, margin, y);
+        y += descLines.length * lineHeight + 2;
+
+        // Add image if available
+        if (it.image) {
+          const base64Img = await fetchImageAsBase64(it.image);
+          if (base64Img) {
+            const imgHeight = 40; // fixed height
+            const imgWidth = contentWidth;
+            ensureSpace(imgHeight + 6);
+            doc.addImage(base64Img, "JPEG", margin, y, imgWidth, imgHeight);
+            y += imgHeight + 8;
+          }
+        }
+      }
+    }
+
+    // Page numbers
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 8, {
+        align: "center",
+      });
+    }
+
+    doc.save(`default_booking_${booking._id}.pdf`);
+  } catch (err) {
+    console.error("Default Package PDF generation failed:", err);
+  }
+};
+
+
+
+
+
+
+
+// show only date (e.g. 11 Sept 2025)
+const formatDate = (dateStr) => {
+  if (!dateStr) return "-";
+  const d = new Date(dateStr);
+  if (isNaN(d)) return "-";
+  return d.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+// show only time (e.g. 12:00 AM)
+const formatTime = (dateStr) => {
+  if (!dateStr) return "-";
+  const d = new Date(dateStr);
+  if (isNaN(d)) return "-";
+  return d.toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+};
+
+
 
   return (
 
@@ -210,12 +524,18 @@ export default function NotificationPage() {
               {notifications.map((notification) => (
                 <Card
                   key={notification._id}
-                  className={`transition-all overflow-auto px-2 hover:shadow-md ${(notification.type === "system" && notification.status === "active") ? "border-l-4 border-l-blue-500" : "border-l-4 border-l-green-500"}`}
+                  className={`transition-all overflow-auto px-2 hover:shadow-md border-l-4
+                    ${notification.type === "success" || notification.type === "confirm" ? "border-l-green-500" : ""}
+                    ${notification.type === "booking" ? "border-l-yellow-500" : ""}
+                    ${notification.type === "system" && notification.status === "active" ? "border-l-blue-500" : ""}
+                    ${notification.type === "cancel" ? "border-l-red-500" : ""}
+                    ${notification.type === "pending" ? "border-l-orange-500" : ""}`}
                 >
-                  <CardContent className="p-6">
+
+                  <CardContent className="p-6 relative">
                     <div className="flex items-start justify-between">
                       <div className="flex flex-col gap-2">
-                        <div className="flex-shrink-0">{(notification.type === "success" || notification.type === "booking") && `Booking ID :  ${notification.booking}`}</div>
+                        <div className="flex-shrink-0">{(notification.type === "success" || notification.type === "booking" || notification.type === "cancel") && `Booking ID :  ${notification.booking}`}</div>
                         <div className="flex items-start space-x-4 flex-1">
                           <div className="flex-shrink-0">{getTypeIcon(notification.type)}</div>
                           <div className="flex-1 min-w-0">
@@ -244,6 +564,7 @@ export default function NotificationPage() {
                         </div>
                       </div>
                     </div>
+                    <EyeIcon onClick={() => { const booking = bookings.find(b => b._id === notification.booking); booking.source === "booking" ? generatePdf(booking) : generateDefaultPackagePdf(booking) }} className="absolute top-0 right-2"/>
                   </CardContent>
                 </Card>
               ))}
@@ -269,126 +590,238 @@ export default function NotificationPage() {
               </CardTitle>
             </CardHeader>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
-              {bookings.map((booking) => (
-                <CardContent
-                  key={booking._id}
-                  id={booking._id}
-                  className="relative space-y-6 border p-0 rounded-lg bg-white shadow-lg overflow-hidden"
-                >
-                  {/* top bar: id + download */}
-                  <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b">
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs font-mono text-gray-600">ID</span>
-                      <span className="text-sm font-mono text-gray-800">{`B2B${booking._id.slice(0,6)}....`}</span>
-                      {booking.status && (
-                        <Badge
-                          className={`ml-8 p-2
-                            ${booking.status === "pending" ? "bg-yellow-500 text-white" : ""}
-                            ${booking.status === "confirmed" ? "bg-green-500 text-white" : ""}
-                            ${booking.status === "cancelled" ? "bg-red-500 text-white" : ""}
-                          `}
-                        >
-                          {booking.status}
-                        </Badge>
-                      )}
+                {bookings.map((booking) => {
+                  
+                return  booking.source === "Booking" ? (
+                    <CardContent
+                      key={booking._id}
+                      id={booking._id}
+                      className="relative space-y-6 border p-0 rounded-lg bg-white shadow-lg overflow-hidden"
+                    >
+                      {/* top bar: id + download */}
+                      <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs font-mono text-gray-600">ID</span>
+                          <span className="text-sm font-mono text-gray-800">{`B2B${booking._id.slice(0, 6)}....`}</span>
+                          {booking.status && (
+                            <Badge
+                              className={`ml-8 p-2
+                                ${booking.status === "pending" ? "bg-yellow-500 text-white" : ""}
+                                ${booking.status === "confirmed" ? "bg-green-500 text-white" : ""}
+                                ${booking.status === "cancelled" ? "bg-red-500 text-white" : ""}
+                              `}
+                            >
+                              {booking.status}
+                            </Badge>
+                          )}
 
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button size="sm" variant="ghost" onClick={() => generatePdf(booking)} aria-label={`Download ${booking._id}`}>
-                        <Download className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="p-6 bg-white">
-                    {/* package */}
-                    {booking.package_id ? (
-                      <div className="border rounded-lg p-4 bg-gray-50">
-                        <h3 className="font-semibold mb-2">Package</h3>
-                        <p className="font-medium mb-3">{booking.package_name}</p>
-                        <div className="mb-3 text-sm">
-                          <div className="mb-1"><strong>Pickup</strong></div>
-                          <div className="ml-2">Date: {booking.dates?.pickup_date ?? "-"}</div>
-                          <div className="ml-2">Time: {booking.dates?.pickup_time ?? "-"}</div>
-                          <div className="ml-2">Location: {booking.dates?.pickup_location ?? "-"}</div>
                         </div>
-                        <div className="mb-3 text-sm">
-                          <div className="mb-1"><strong>Drop</strong></div>
-                          <div className="ml-2">Date: {booking.dates?.drop_date ?? "-"}</div>
-                          <div className="ml-2">Time: {booking.dates?.drop_time ?? "-"}</div>
-                          <div className="ml-2">Location: {booking.dates?.drop_location ?? "-"}</div>
+                        <div className="flex items-center gap-2">
+                          <Button size="sm" variant="ghost" onClick={() => generatePdf(booking)} aria-label={`Download ${booking._id}`}>
+                            <Download className="w-4 h-4" />
+                          </Button>
                         </div>
                       </div>
-                    ) : (
-                      <div className="border rounded-lg p-4 bg-gray-50">
-                        <h3 className="font-semibold mb-2">Package</h3>
-                        <span className="text-sm text-gray-600">No package selected</span>
-                      </div>
-                    )}
 
-                    {/* travelers */}
-                    <div className="border rounded-lg p-4 bg-gray-50 mt-4">
-                      <h3 className="font-semibold mb-2">Travelers</h3>
-                      <div className="text-sm">
-                        <div>Adults: {booking.guests?.adults_total ?? 0}</div>
-                        <div>Children: {booking.guests?.children ?? 0}</div>
-                        <div>Infants: {booking.guests?.infants ?? 0}</div>
-                      </div>
-                    </div>
+                      <div className="p-6 bg-white">
+                        {/* package */}
+                        {booking.package_id ? (
+                          <div className="border rounded-lg p-4 bg-gray-50">
+                            <h3 className="font-semibold mb-2">Package</h3>
+                            <p className="font-medium mb-3">{booking.package_name}</p>
+                            <div className="mb-3 text-sm">
+                              <div className="mb-1"><strong>Pickup</strong></div>
+                              <div className="ml-2">Date: {booking.dates?.pickup_date ?? "-"}</div>
+                              <div className="ml-2">Time: {booking.dates?.pickup_time ?? "-"}</div>
+                              <div className="ml-2">Location: {booking.dates?.pickup_location ?? "-"}</div>
+                            </div>
+                            <div className="mb-3 text-sm">
+                              <div className="mb-1"><strong>Drop</strong></div>
+                              <div className="ml-2">Date: {booking.dates?.drop_date ?? "-"}</div>
+                              <div className="ml-2">Time: {booking.dates?.drop_time ?? "-"}</div>
+                              <div className="ml-2">Location: {booking.dates?.drop_location ?? "-"}</div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="border rounded-lg p-4 bg-gray-50">
+                            <h3 className="font-semibold mb-2">Package</h3>
+                            <span className="text-sm text-gray-600">No package selected</span>
+                          </div>
+                        )}
 
-                    {/* hotel */}
-                    <div className="border rounded-lg p-4 bg-gray-50 mt-4">
-                      <h3 className="font-semibold mb-2">Hotel</h3>
-                      {booking.hotel_id ? (
-                        <div className="text-sm">
-                          <div className="font-medium">{booking.hotel?.hotel_name}</div>
-                          <div>Rooms: {booking.hotel?.rooms}</div>
-                          <div>Extra Beds: {booking.hotel?.extra_beds ?? 0}</div>
-                          <div>Food Plan: {booking.hotel?.food_plan ?? "—"}</div>
+                        {/* travelers */}
+                        <div className="border rounded-lg p-4 bg-gray-50 mt-4">
+                          <h3 className="font-semibold mb-2">Travelers</h3>
+                          <div className="text-sm">
+                            <div>Adults: {booking.guests?.adults_total ?? 0}</div>
+                            <div>Children: {booking.guests?.children ?? 0}</div>
+                            <div>Infants: {booking.guests?.infants ?? 0}</div>
+                          </div>
                         </div>
-                      ) : (
-                        <div className="text-sm text-gray-600">No hotel selected</div>
-                      )}
-                    </div>
 
-                    {/* vehicle */}
-                    <div className="border rounded-lg p-4 bg-gray-50 mt-4">
-                      <h3 className="font-semibold mb-2">Vehicle</h3>
-                      {booking.vehicle_id ? (
-                        <div className="text-sm">{booking.vehicle_name ?? "—"}</div>
-                      ) : (
-                        <div className="text-sm text-gray-600">No vehicle selected</div>
-                      )}
-                    </div>
+                        {/* hotel */}
+                        <div className="border rounded-lg p-4 bg-gray-50 mt-4">
+                          <h3 className="font-semibold mb-2">Hotel</h3>
+                          {booking.hotel_id ? (
+                            <div className="text-sm">
+                              <div className="font-medium">{booking.hotel?.hotel_name}</div>
+                              <div>Rooms: {booking.hotel?.rooms}</div>
+                              <div>Extra Beds: {booking.hotel?.extra_beds ?? 0}</div>
+                              <div>Food Plan: {booking.hotel?.food_plan ?? "—"}</div>
+                            </div>
+                          ) : (
+                            <div className="text-sm text-gray-600">No hotel selected</div>
+                          )}
+                        </div>
 
-                    {/* extras */}
-                    <div className="border rounded-lg p-4 bg-gray-50 mt-4">
-                      <h3 className="font-semibold mb-2">Extras</h3>
-                      <div className="text-sm">
-                        <div>Extra Food: {`${booking.extras?.breakfast ? "Breakfast, " : ""}${booking.extras?.lunchNonVeg ? "lunchNonVeg, " : ""}${booking.extras?.lunchVeg ? "lunchVeg" : ""}` || "None"}</div>
-                        <div>Guide Needed: {booking.extras?.guideNeeded ? "Yes" : "No"}</div>
-                        <div>Entry Ticket: {booking.extras?.entry_ticket_needed ? "Yes" : "No"}</div>
-                        <div>Snow World Ticket: {booking.extras?.snow_world_needed ? "Yes" : "No"}</div>
+                        {/* vehicle */}
+                        <div className="border rounded-lg p-4 bg-gray-50 mt-4">
+                          <h3 className="font-semibold mb-2">Vehicle</h3>
+                          {booking.vehicle_id ? (
+                            <div className="text-sm">{booking.vehicle_name ?? "—"}</div>
+                          ) : (
+                            <div className="text-sm text-gray-600">No vehicle selected</div>
+                          )}
+                        </div>
+
+                        {/* extras */}
+                        <div className="border rounded-lg p-4 bg-gray-50 mt-4">
+                          <h3 className="font-semibold mb-2">Extras</h3>
+                          <div className="text-sm">
+                            <div>Extra Food: {`${booking.extras?.breakfast ? "Breakfast, " : ""}${booking.extras?.lunchNonVeg ? "lunchNonVeg, " : ""}${booking.extras?.lunchVeg ? "lunchVeg" : ""}` || "None"}</div>
+                            <div>Guide Needed: {booking.extras?.guideNeeded ? "Yes" : "No"}</div>
+                            <div>Entry Ticket: {booking.extras?.entry_ticket_needed ? "Yes" : "No"}</div>
+                            <div>Snow World Ticket: {booking.extras?.snow_world_needed ? "Yes" : "No"}</div>
+                          </div>
+                        </div>
+
+                        {/* summary */}
+                        <div className="border rounded-lg p-4 bg-gray-50 mt-4">
+                          <h3 className="font-semibold mb-2">Summary</h3>
+                          <div className="text-sm">
+                            <div>Package Amount: {booking.pricing?.base_total ? `₹ ${booking.pricing.base_total}` : "0"}</div>
+                            <div>Agent commission: {booking.pricing?.agent_commission ? `₹ ${booking.pricing.agent_commission}` : "0"}</div>
+                            <div className="text-lg font-semibold">Total Amount: {booking.pricing?.total_amount ? `₹ ${booking.pricing.total_amount}` : "0"}</div>
+                          </div>
+                        </div>
+
+                        <div className="mt-6 text-sm text-gray-600 border-t pt-4">
+                          <div>For support: support@example.com | +91 12345 67890</div>
+                          <div className="mt-1">Generated on: {formatTimestamp(new Date().toISOString())}</div>
+                        </div>
                       </div>
-                    </div>
+                    </CardContent>
+                  ) : (
+                    <CardContent
+                      key={booking._id}
+                      id={booking._id}
+                      className="relative space-y-6 border p-0 rounded-lg bg-white shadow-lg overflow-hidden"
+                    >
+                      {/* top bar: id + download */}
+                      <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs font-mono text-gray-600">ID</span>
+                          <span className="text-sm font-mono text-gray-800">{`B2B${booking._id.slice(0, 6)}....`}</span>
+                          <span className="ml-2 px-2 py-1 text-xs rounded bg-indigo-100 text-indigo-700">Default Package</span>
 
-                    {/* summary */}
-                    <div className="border rounded-lg p-4 bg-gray-50 mt-4">
-                      <h3 className="font-semibold mb-2">Summary</h3>
-                      <div className="text-sm">
-                        <div>Package Amount: {booking.pricing?.base_total ? `₹ ${booking.pricing.base_total}` : "0"}</div>
-                        <div>Agent commission: {booking.pricing?.agent_commission ? `₹ ${booking.pricing.agent_commission}` : "0"}</div>
-                        <div className="text-lg font-semibold">Total Amount: {booking.pricing?.total_amount ? `₹ ${booking.pricing.total_amount}` : "0"}</div>
+                          {booking.status && (
+                            <Badge
+                              className={`ml-8 p-2
+                                ${booking.status === "pending" ? "bg-yellow-500 text-white" : ""}
+                                ${booking.status === "confirmed" ? "bg-green-500 text-white" : ""}
+                                ${booking.status === "cancelled" ? "bg-red-500 text-white" : ""}
+                              `}
+                            >
+                              {booking.status}
+                            </Badge>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <Button size="sm" variant="ghost" onClick={() => generateDefaultPackagePdf(booking)} aria-label={`Download ${booking._id}`}>
+                            <Download className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="mt-6 text-sm text-gray-600 border-t pt-4">
-                      <div>For support: support@example.com | +91 12345 67890</div>
-                      <div className="mt-1">Generated on: {formatTimestamp(new Date().toISOString())}</div>
-                    </div>
-                  </div>
-                </CardContent>
-              ))}
+                      <div className="p-6 bg-white">
+                        {/* contact */}
+                        <div className="border rounded-lg p-4 bg-gray-50">
+                          <h3 className="font-semibold mb-2">Contact</h3>
+                          <div className="text-sm">
+                            <div className="font-medium">{booking.contact?.name ?? "-"}</div>
+                            <div>Email: {booking.contact?.email ?? "-"}</div>
+                            <div>Mobile: {booking.contact?.mobile_number ?? "-"}</div>
+                            <div>State: {booking.contact?.state ?? "-"}</div>
+                          </div>
+                        </div>
+
+                        {/* package */}
+                        <div className="border rounded-lg p-4 bg-gray-50 mt-4">
+                          <h3 className="font-semibold mb-2">Package</h3>
+                          <p className="font-medium mb-3">{booking.package_name ?? "-"}</p>
+                          <div className="text-sm">
+                            <div>Package ID: {booking.package_id ? booking.package_id.toString() : "—"}</div>
+                          </div>
+                        </div>
+
+                        {/* outbound / return dates */}
+                        <div className="grid md:grid-cols-2 gap-4 mt-4">
+                          <div className="border rounded-lg p-4 bg-gray-50">
+                            <h3 className="font-semibold mb-2">Outbound</h3>
+                            <div className="text-sm">
+                              <div>Date: {booking.dates?.outbound?.pickup_date ? formatDate(booking.dates.outbound.pickup_date) : "-"}</div>
+                              <div>Departure: {booking.dates?.outbound?.departureTime ? formatTime(booking.dates.outbound.departureTime) : "-"}</div>
+                              <div>Arrival: {booking.dates?.outbound?.arrivalTime ? formatTime(booking.dates.outbound.arrivalTime) : "-"}</div>
+                              <div>Flight: {booking.dates?.outbound?.flight ?? "—"}</div>
+                            </div>
+                          </div>
+
+                          <div className="border rounded-lg p-4 bg-gray-50">
+                            <h3 className="font-semibold mb-2">Return</h3>
+                            <div className="text-sm">
+                              <div>Date: {booking.dates?.return?.drop_date ? formatDate(booking.dates.return.drop_date) : "-"}</div>
+                              <div>Departure: {booking.dates?.return?.departureTime ? formatTime(booking.dates.return.departureTime) : "-"}</div>
+                              <div>Arrival: {booking.dates?.return?.arrivalTime ? formatTime(booking.dates.return.arrivalTime) : "-"}</div>
+                              <div>Flight: {booking.dates?.return?.flight ?? "—"}</div>
+                            </div>
+                          </div>
+                        </div>
+
+
+                        {/* travelers */}
+                        <div className="border rounded-lg p-4 bg-gray-50 mt-4">
+                          <h3 className="font-semibold mb-2">Travelers</h3>
+                          <div className="text-sm">
+                            <div>Adults: {booking.guests?.adults_total ?? 0}</div>
+                            <div>Children (with bed): {booking.guests?.children_with_bed ?? 0}</div>
+                            <div>Children (without bed): {booking.guests?.children_without_bed ?? 0}</div>
+                            <div>Infants: {booking.guests?.infants ?? 0}</div>
+                          </div>
+                        </div>
+
+                        {/* summary / pricing */}
+                        <div className="border rounded-lg p-4 bg-gray-50 mt-4">
+                          <h3 className="font-semibold mb-2">Summary</h3>
+                          <div className="text-sm">
+                            <div>Package Amount: {booking.pricing?.base_total ? `₹ ${booking.pricing.base_total}` : "0"}</div>
+                            <div>Agent commission: {booking.pricing?.agent_commission ? `₹ ${booking.pricing.agent_commission}` : "0"}</div>
+                            <div className="text-lg font-semibold">Total Amount: {booking.pricing?.total_amount ? `₹ ${booking.pricing.total_amount}` : "0"}</div>
+                          </div>
+                        </div>
+
+                        <div className="mt-6 text-sm text-gray-600 border-t pt-4">
+                          <div>For support: support@example.com | +91 12345 67890</div>
+                          <div className="mt-1">Generated on: {formatTimestamp(new Date().toISOString())}</div>
+                        </div>
+                      </div>
+                    </CardContent>
+
+                  )
+                    
+                  
+                
+                })}
 
               {bookings.length === 0 && (
                 <div className="col-span-1 md:col-span-2">
