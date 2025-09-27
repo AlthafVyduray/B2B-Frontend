@@ -250,63 +250,95 @@ const useAdminStore = create((set, get) => ({
     
     notifications: [],
     notificationStats: {
-    total: 0,
-    system: 0,
-    booking: 0,
-    success: 0,
-    activeSystem: 0,
-    inactiveSystem: 0,
+        total: 0,
+        system: 0,
+        booking: 0,
+        success: 0,
+        activeSystem: 0,
+        inactiveSystem: 0,
     },
     notificationPagination: {
-    page: 1,
-    totalPages: 1,
-    limit: 10,
-    totalRecords: 0,
+        page: 1,
+        totalPages: 1,
+        limit: 10,
+        totalRecords: 0,
     },
     loadNotifications: false,
 
-    getNotifications: async ({ filterType = "", filterStatus = "", page = 1, limit = 10 }) => {
-    set({ loadNotifications: true });
-    try {
-        const res = await axiosInstance.get("/admin/notifications", {
-        params: { filterType, filterStatus, page, limit }
-        });
-
-        set({
-        notifications: res.data.notifications,
-        notificationStats: res.data.stats,
-        notificationPagination: res.data.pagination,
-        loadNotifications: false,
-        });
-    } catch (error) {
-        toast.error(error.response?.data?.message || "Failed to load notifications");
-        set({ loadNotifications: false });
-    }
+    // Setter for pagination page
+    setNotificationPage: (page) => {
+        set((state) => ({
+        notificationPagination: {
+            ...state.notificationPagination,
+            page,
+        },
+        }));
     },
 
+    // Fetch notifications
+    getNotifications: async ({ filterType = "", filterStatus = "", page = 1, limit = 10 } = {}) => {
+        set({ loadNotifications: true });
+        try {
+        const res = await axiosInstance.get("/admin/notifications", {
+            params: { filterType, filterStatus, page, limit },
+        });
+
+        // Expecting res.data = { notifications, stats, pagination }
+        set({
+            notifications: res.data.notifications || [],
+            notificationStats: res.data.stats || {
+            total: 0,
+            system: 0,
+            booking: 0,
+            success: 0,
+            activeSystem: 0,
+            inactiveSystem: 0,
+            },
+            notificationPagination: res.data.pagination || {
+            page: page,
+            totalPages: 1,
+            limit,
+            totalRecords: 0,
+            },
+            loadNotifications: false,
+        });
+        } catch (error) {
+        toast.error(error?.response?.data?.message || "Failed to load notifications");
+        set({ loadNotifications: false });
+        }
+    },
 
     createNotification: async (notification) => {
         try {
-            const res = await axiosInstance.post('/admin/notifications', {notification});
-            toast.success("Notification created successfully");
-            await get().getNotifications({});
-        
+        await axiosInstance.post("/admin/notifications", { notification });
+        toast.success("Notification created successfully");
+
+        // After creating, reload notifications (use current filters & page from store)
+        const { notificationPagination } = get();
+        await get().getNotifications({
+            page: notificationPagination.page,
+            limit: notificationPagination.limit,
+        });
         } catch (error) {
-            toast.error(error.response?.data?.message || "Failed to create Notification");
+        toast.error(error?.response?.data?.message || "Failed to create Notification");
         }
     },
 
     deleteNotification: async (id) => {
         try {
-            const res = await axiosInstance.delete(`/admin/notifications/${id}`);
-            set((state) => ({
-                notifications: state.notifications.filter(notification => notification._id !== id)
-            }))
-            toast.success("Notification Deleted Successfully")
+        await axiosInstance.delete(`/admin/notifications/${id}`);
+        set((state) => ({
+            notifications: state.notifications.filter((n) => n._id !== id),
+        }));
+        toast.success("Notification Deleted Successfully");
         } catch (error) {
-            toast.error(error.response?.data?.message || "Failed to Delete Notification");
+        toast.error(error?.response?.data?.message || "Failed to Delete Notification");
         }
     },
+
+
+
+
 
     //Vehicles
 
@@ -499,9 +531,7 @@ const useAdminStore = create((set, get) => ({
     deletePackage: async (id) => {
         try {
             const res = await axiosInstance.delete(`/admin/packages/${id}`);
-            set((state) => ({
-                packages: state.packages.filter(pkg => pkg._id !== id)
-            }))
+            await get().getPackages();
             toast.success("Package Deleted Successfully")
         } catch (error) {
             toast.error(error.response?.data?.message || "Failed to Delete Package");
@@ -519,6 +549,30 @@ const useAdminStore = create((set, get) => ({
             toast.success("Package Edited Successfully")
         } catch (error) {
             toast.error(error.response?.data?.message || "Failed to Edit Package");
+        }
+    },
+
+    createDefaultPackages: async (fd) => {
+        try {
+            const res = await axiosInstance.post("/admin/packages/default-package", fd);
+            // set((state) => ({
+            //     packages: state.packages.map((pkg) =>
+            //     pkg._id == id ? res.data.package : pkg)
+            // }));
+            await get().getPackages();
+            toast.success("Default Package created Successfully")
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Failed to Create Default Package");
+        }
+    },
+
+    updateDefaultPackage: async (id, fd) => {
+        try {
+            const res = await axiosInstance.put(`/admin/packages/default-package/${id}`, fd);
+            await get().getPackages();
+            toast.success("Default Package created Successfully")
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Failed to update Default Package");
         }
     },
 

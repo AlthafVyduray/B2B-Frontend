@@ -1,50 +1,27 @@
-import {useState, useEffect} from 'react'
+import { useState } from 'react'
+import { X } from 'lucide-react';
 
-const CreateNormalPackage = () => {
-  
-  const [errors, setErrors] = useState({});
+
+const CreateNormalPackage = ({ form, setForm, itineraries, setItineraries, errors, setErrors, onCloseCreateNormal, createPackage}) => {
+
+
   const [submitting, setSubmitting] = useState(false);
   
-  useEffect(() => {
-      if (!Array.isArray(packages)) {
-        setNormalizedPackages([]);
-        return;
-      }
+  //For substitute of package preview images if not available
+  const PLACEHOLDER_SVG = `data:image/svg+xml;utf8,${encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="160" height="100"><rect width="100%" height="100%" fill="#f3f4f6"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#9ca3af">No Image</text></svg>`
+  )}`;
   
-      setNormalizedPackages(
-        packages.map((p) => {
-          const safeItins = Array.isArray(p.itineraries) ? p.itineraries : [];
-          const mapped = safeItins.map((it, idx) => ({
-            id: it._id ?? it.id ?? makeId(),
-            _id: it._id ?? undefined,
-            day_number: it.day_number ?? idx + 1,
-            description: it.description ?? "",
-            image: it.image ?? "",
-            // keep any other backend fields
-            ...it,
-          }));
-          return {
-            ...p,
-            itineraries: mapped,
-          };
-        })
-      );
-    }, [packages]);
-  
-    // --- Create form states ---
-    const [form, setForm] = useState({
-      package_name: "",
-      place: "",
-      nights: "",
-      days: 1,
-      price: "",
-    });
 
+  
+  
+  // handling form field changes
   const handleFormChange = (e) => {
     const { name, value } = e.target;
     setForm((p) => ({ ...p, [name]: value }));
   };
 
+  //for handling itinerary description change
   const handleItineraryDescChange = (index, value) => {
     setItineraries((prev) => {
       const copy = [...prev];
@@ -53,6 +30,7 @@ const CreateNormalPackage = () => {
     });
   };
 
+  //handle itinerary file change
   const handleItineraryFileChange = (index, file) => {
     setItineraries((prev) => {
       const copy = [...prev];
@@ -85,21 +63,78 @@ const CreateNormalPackage = () => {
     });
   };
 
+  // Validating function when submitting
   const validate = () => {
     const e = {};
-    if (!form.package_name.trim()) e.package_name = "Package name required";
-    if (!form.place.trim()) e.place = "Place required";
+
+   
+    if (!form.package_name.trim()) {
+      e.package_name = "Package name required";
+    }
+
+
+    // Option B (stricter, enforce place required on frontend):
+    if (!form.place.trim()) {
+      e.place = "Place required";
+    }
+
+    // ---------------------------
+    // Nights validation
+    // ---------------------------
+    const nights = Number(form.nights);
+    if (!Number.isInteger(nights) || nights < 0) {
+      e.nights = "Nights must be at least 0";
+    }
+
+    // ---------------------------
+    // Days validation
+    // ---------------------------
     const days = Number(form.days);
-    if (!Number.isInteger(days) || days <= 0) e.days = "Days must be a positive integer";
-    if (!form.price || Number.isNaN(Number(form.price))) e.price = "Price required";
+    if (!Number.isInteger(days) || days <= 0) {
+      e.days = "Days must be a positive integer";
+    }
+
+    // Nights + 1 rule
+    if (
+      Number.isInteger(nights) &&
+      nights > 0 &&
+      Number.isInteger(days) &&
+      days > 0 &&
+      days !== nights + 1
+    ) {
+      e.days = "Days should always be Nights + 1";
+    }
+
+    // ---------------------------
+    // Price validation
+    // ---------------------------
+    if (form.price === "" || Number.isNaN(Number(form.price))) {
+      e.price = "Price required";
+    } else if (Number(form.price) < 0) {
+      e.price = "Price cannot be negative";
+    }
+
+    // ---------------------------
+    // Itineraries validation (frontend stricter than backend)
+    // Backend allows empty itineraries,
+    // but if you want each itinerary to have desc + image, keep this
+    // ---------------------------
     itineraries.forEach((it, idx) => {
-      if (!it.description.trim()) e[`it_${idx}`] = `Description for Day ${idx + 1} required`;
-      if (!it.file && !it.existingImage) e[`file_${idx}`] = `Image for Day ${idx + 1} required`;
+      if (!it.description.trim()) {
+        e[`it_${idx}`] = `Description for Day ${idx + 1} required`;
+      }
+      if (!it.file && !it.existingImage) {
+        e[`file_${idx}`] = `Image for Day ${idx + 1} required`;
+      }
     });
+
+    
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
+
+  //function for handle submit
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
@@ -117,46 +152,18 @@ const CreateNormalPackage = () => {
       itineraries.forEach((it) => {
         if (it.file) fd.append("itineraryImages", it.file, `day-${it.day_number}-${it.file.name}`);
       });
-
-      if (typeof createPackage === "function") {
-        await createPackage(fd);
-      } else {
-        console.error("createPackage not available in store");
-        throw new Error("createPackage not available");
-      }
-
-      // reset
-      setForm({ package_name: "", place: "", nights: "", days: 1, price: "" });
-      itineraries.forEach((it) => {
-        if (it.preview && it.preview.startsWith("blob:")) URL.revokeObjectURL(it.preview);
-      });
-      setItineraries([{ id: makeId(), day_number: 1, description: "", file: null, preview: "", existingImage: "" }]);
-      setErrors({});
-      setCreatedPackage(false);
+      
+      await createPackage(fd);
+      onCloseCreateNormal()
+        
     } catch (err) {
       console.error("Create package failed:", err);
       alert(err?.response?.data?.message || "Failed to create package");
-    } finally {
-      setSubmitting(false);
-    }
+    } 
   };
   
-   useEffect(() => {
-      const days = Number(form.days) || 0;
-      setItineraries((prev) => {
-        const next = [...prev];
-        if (days <= 0) return [];
-        while (next.length < days) {
-          next.push({ id: makeId(), day_number: next.length + 1, description: "", file: null, preview: "", existingImage: "" });
-        }
-        while (next.length > days) {
-          const rem = next.pop();
-          if (rem?.preview?.startsWith("blob:")) URL.revokeObjectURL(rem.preview);
-        }
-        return next.map((it, idx) => ({ ...it, day_number: idx + 1 }));
-      });
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [form.days]);
+
+   
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
@@ -167,10 +174,7 @@ const CreateNormalPackage = () => {
                     <button
                     type="button"
                     onClick={() => {
-                        itineraries.forEach((it) => {
-                        if (it.preview && it.preview.startsWith("blob:")) URL.revokeObjectURL(it.preview);
-                        });
-                        setCreatedPackage(false);
+                        onCloseCreateNormal()
                     }}
                     className="p-1"
                     aria-label="Close"
@@ -195,6 +199,7 @@ const CreateNormalPackage = () => {
                     <div>
                     <label className="block text-sm font-medium text-gray-700">Nights</label>
                     <input name="nights" value={form.nights} onChange={handleFormChange} className="mt-2 w-full border rounded px-3 py-2" placeholder="Enter nights" inputMode="numeric" />
+                    {errors.nights && <p className="text-xs text-red-500 mt-1">{errors.nights}</p>}
                     </div>
 
                     <div>
@@ -254,7 +259,7 @@ const CreateNormalPackage = () => {
                 </div>
 
                 <div className="flex gap-3 justify-end p-4 border-t">
-                    <button type="button" onClick={() => { itineraries.forEach((it) => { if (it.preview && it.preview.startsWith("blob:")) URL.revokeObjectURL(it.preview); }); setForm({ package_name: "", place: "", nights: "", days: 1, price: "" }); setItineraries([{ id: makeId(), day_number: 1, description: "", file: null, preview: "", existingImage: "" }]); setErrors({}); setCreatedPackage(false); }} className="px-4 py-2 rounded bg-gray-200" disabled={submitting}>Cancel</button>
+                    <button type="button" onClick={() => onCloseCreateNormal()} className="px-4 py-2 rounded bg-gray-200" disabled={submitting}>Cancel</button>
                     <button type="submit" className="px-4 py-2 rounded bg-blue-600 text-white" disabled={submitting}>{submitting ? "Saving..." : "Add Package"}</button>
                 </div>
             </form>

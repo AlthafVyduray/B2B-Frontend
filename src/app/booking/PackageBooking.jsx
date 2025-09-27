@@ -363,6 +363,7 @@ const PackageBooking = ({ selectedPackage, setSelectedPackage, defaultPackage, s
                     onChange={handlePickupChange}
                     className="border rounded px-2 py-1"
                     />
+                    
                 </div>
                 {errors.pickup_date && (
                 <div className="text-xs text-red-600 mt-1">{errors.pickup_date}</div>

@@ -33,8 +33,10 @@ export default function NotificationsPage() {
   const [notificationToDelete, setNotificationToDelete] = useState(null);
   const [notificationToCreate, setNotificationToCreate] = useState(false)
 
+
   useEffect(() => {
     getNotifications({ filterType, filterStatus, page: notificationPagination.page })
+    
   }, [filterType, filterStatus, notificationPagination.page])
 
   const [notification, setNotification] = useState({
@@ -193,239 +195,240 @@ export default function NotificationsPage() {
   // }
 
   return (
-    <div className="lg:p-6 p-3 space-y-6 lg:mt-0 mt-10">
-      {/* Header */}
-      <Header />
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Notifications</h1>
-          <p className="text-gray-600 mt-1">Manage system notifications and alerts</p>
-        </div>
-        <Button onClick={() => setNotificationToCreate(true)} className="bg-blue-600 hover:bg-blue-700">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Notification
-        </Button>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Notifications</p>
-                <p className="text-2xl font-bold text-gray-900">{notificationStats.total}</p>
-              </div>
-              <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Bell className="h-6 w-6 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">System Notifications</p>
-                <p className="text-2xl font-bold text-gray-900">{notificationStats.system}</p>
-              </div>
-              <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <CheckCircle className="h-6 w-6 text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Booking Notifications</p>
-                <p className="text-2xl font-bold text-gray-900">{notificationStats.booking}</p>
-              </div>
-              <div className="h-12 w-12 bg-red-100 rounded-lg flex items-center justify-center">
-                <AlertTriangle className="h-6 w-6 text-red-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">
-                  Success Notifications</p>
-                <p className="text-2xl font-bold text-gray-900">{notificationStats.success}</p>
-              </div>
-              <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                <Eye className="h-6 w-6 text-purple-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col lg:flex-row gap-4">
-            <div className="flex gap-4">
-              <select
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">All Types</option>
-                <option value="system">System</option>
-                <option value="success">Success</option>
-                <option value="booking">Booking</option>
-                <option value="cancel">Cancelled</option>
-              </select>
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">All Status</option>
-                <option value="active">Active</option>
-              </select>
-            </div>
+    <div className="lg:p-6 p-3 space-y-6 lg:mt-0 mt-10 m-2 bg-background">
+      <main className="flex-1 flex flex-col bg-gray-50 gap-3">
+        {/* Header */}
+        <Header />
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Notifications</h1>
+            <p className="text-gray-600 mt-1">Manage system notifications and alerts</p>
           </div>
-        </CardContent>
-      </Card>
+          <Button onClick={() => setNotificationToCreate(true)} className="bg-blue-600 hover:bg-blue-700">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Notification
+          </Button>
+        </div>
 
-      {/* Notifications List */}
-      <div className="space-y-4">
-        {notifications.map((notification) => (
-          <Card
-            key={notification._id}
-            className={`transition-all hover:shadow-md border-l-4
-              ${notification.type === "success" ? "border-l-green-600" : ""}
-              ${notification.type === "booking" ? "border-l-yellow-600" : ""}
-              ${notification.type === "system" ? "border-l-blue-600" : ""}
-              ${notification.type === "cancel" ? "border-l-red-600" : ""}`}
-          >
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card>
             <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div className="flex flex-col gap-2">
-                  <div className="flex-shrink-0">{(notification.type === "success" || notification.type === "booking" || notification.type === "cancel") && `Booking ID :  ${notification.booking}`}</div>
-                  <div className="flex items-start space-x-4 flex-1">
-                    <div className="flex-shrink-0">{getTypeIcon(notification.type)}</div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-semibold text-gray-900">{notification.title}</h3>
-                        {(notification.type === "system" && notification.status === "active") && (
-                          <Badge className="bg-blue-100 text-blue-800 border-blue-200">Active</Badge>
-                        )}
-                      </div>
-                      <p className="text-gray-600 mb-3">{notification.message}</p>
-                      <div className="flex items-center gap-6 text-sm text-gray-500">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4" />
-                          {formatTimestamp(notification.createdAt)}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <User className="h-4 w-4" />
-                          {(notification.type === "success" || notification.type === "booking") && notification.recipient}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Filter className="h-4 w-4" />
-                          {notification.type}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Total Notifications</p>
+                  <p className="text-2xl font-bold text-gray-900">{notificationStats.total}</p>
                 </div>
-        
-                <div className="flex items-center gap-2 ml-4">
-                  <Button onClick={() => setNotificationToDelete(notification)} variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <Bell className="h-6 w-6 text-blue-600" />
                 </div>
               </div>
             </CardContent>
           </Card>
-        ))}
-      </div>
 
-      {notifications.length === 0 && (
-        <Card>
-          <CardContent className="p-12 text-center">
-            <Bell className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No notifications found</h3>
-            <p className="text-gray-600">Try adjusting your search or filter criteria.</p>
-          </CardContent>
-        </Card>
-      )}
-        <div className="flex justify-center items-center gap-2 mt-6">
-          {/* Prev */}
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={notificationPagination.page === 1}
-            onClick={() =>
-              getNotifications({
-                filterType,
-                filterStatus,
-                page: notificationPagination.page - 1,
-              })
-            }
-          >
-            Prev
-          </Button>
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">System Notifications</p>
+                  <p className="text-2xl font-bold text-gray-900">{notificationStats.system}</p>
+                </div>
+                <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
+                  <CheckCircle className="h-6 w-6 text-green-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-          {/* Page Numbers with dots */}
-          {Array.from(
-            { length: notificationPagination.totalPages },
-            (_, i) => i + 1
-          )
-            .filter(
-              (p) =>
-                p === 1 ||
-                p === notificationPagination.totalPages ||
-                (p >= notificationPagination.page - 1 &&
-                  p <= notificationPagination.page + 1)
-            )
-            .map((p, idx, arr) => {
-              const prevPage = arr[idx - 1];
-              const showDots = prevPage && p - prevPage > 1;
-              return (
-                <React.Fragment key={p}>
-                  {showDots && <span className="px-2">...</span>}
-                  <Button
-                    variant={
-                      notificationPagination.page === p ? "default" : "outline"
-                    }
-                    size="sm"
-                    onClick={() =>
-                      getNotifications({ filterType, filterStatus, page: p })
-                    }
-                  >
-                    {p}
-                  </Button>
-                </React.Fragment>
-              );
-            })}
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Booking Notifications</p>
+                  <p className="text-2xl font-bold text-gray-900">{notificationStats.booking}</p>
+                </div>
+                <div className="h-12 w-12 bg-red-100 rounded-lg flex items-center justify-center">
+                  <AlertTriangle className="h-6 w-6 text-red-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-          {/* Next */}
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={notificationPagination.page === notificationPagination.totalPages}
-            onClick={() =>
-              getNotifications({
-                filterType,
-                filterStatus,
-                page: notificationPagination.page + 1,
-              })
-            }
-          >
-            Next
-          </Button>
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">
+                    Success Notifications</p>
+                  <p className="text-2xl font-bold text-gray-900">{notificationStats.success}</p>
+                </div>
+                <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <Eye className="h-6 w-6 text-purple-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
+        {/* Filters */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex flex-col lg:flex-row gap-4">
+              <div className="flex gap-4">
+                <select
+                  value={filterType}
+                  onChange={(e) => setFilterType(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">All Types</option>
+                  <option value="system">System</option>
+                  <option value="success">Success</option>
+                  <option value="booking">Booking</option>
+                  <option value="cancel">Cancelled</option>
+                </select>
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">All Status</option>
+                  <option value="active">Active</option>
+                </select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Notifications List */}
+        <div className="space-y-4">
+          {notifications.map((notification) => (
+            <Card
+              key={notification._id}
+              className={`transition-all hover:shadow-md border-l-4
+                ${notification.type === "success" ? "border-l-green-600" : ""}
+                ${notification.type === "booking" ? "border-l-yellow-600" : ""}
+                ${notification.type === "system" ? "border-l-blue-600" : ""}
+                ${notification.type === "cancel" ? "border-l-red-600" : ""}`}
+            >
+              <CardContent className="p-6 overflow-y-auto">
+                <div className="flex items-start justify-between">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex-shrink-0">{(notification.type === "success" || notification.type === "booking" || notification.type === "cancel") && `Booking ID :  ${notification.booking}`}</div>
+                    <div className="flex items-start space-x-4 flex-1">
+                      <div className="flex-shrink-0">{getTypeIcon(notification.type)}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-lg font-semibold text-gray-900">{notification.title}</h3>
+                          {(notification.type === "system" && notification.status === "active") && (
+                            <Badge className="bg-blue-100 text-blue-800 border-blue-200">Active</Badge>
+                          )}
+                        </div>
+                        <p className="text-gray-600 mb-3">{notification.message}</p>
+                        <div className="flex items-center gap-6 text-sm text-gray-500">
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-4 w-4" />
+                            {formatTimestamp(notification.createdAt)}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <User className="h-4 w-4" />
+                            {(notification.type === "success" || notification.type === "booking" || notification.type === "cancel") && notification.recipient}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Filter className="h-4 w-4" />
+                            {notification.type}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+          
+                  <div className="flex items-center gap-2 ml-4">
+                    <Button onClick={() => setNotificationToDelete(notification)} variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {notifications.length === 0 && (
+          <Card>
+            <CardContent className="p-12 text-center">
+              <Bell className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No notifications found</h3>
+              <p className="text-gray-600">Try adjusting your search or filter criteria.</p>
+            </CardContent>
+          </Card>
+        )}
+          <div className="flex justify-center items-center gap-2 mt-6">
+            {/* Prev */}
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={notificationPagination.page === 1}
+              onClick={() =>
+                getNotifications({
+                  filterType,
+                  filterStatus,
+                  page: notificationPagination.page - 1,
+                })
+              }
+            >
+              Prev
+            </Button>
+
+            {/* Page Numbers with dots */}
+            {Array.from(
+              { length: notificationPagination.totalPages },
+              (_, i) => i + 1
+            )
+              .filter(
+                (p) =>
+                  p === 1 ||
+                  p === notificationPagination.totalPages ||
+                  (p >= notificationPagination.page - 1 &&
+                    p <= notificationPagination.page + 1)
+              )
+              .map((p, idx, arr) => {
+                const prevPage = arr[idx - 1];
+                const showDots = prevPage && p - prevPage > 1;
+                return (
+                  <React.Fragment key={p}>
+                    {showDots && <span className="px-2">...</span>}
+                    <Button
+                      variant={
+                        notificationPagination.page === p ? "default" : "outline"
+                      }
+                      size="sm"
+                      onClick={() =>
+                        getNotifications({ filterType, filterStatus, page: p })
+                      }
+                    >
+                      {p}
+                    </Button>
+                  </React.Fragment>
+                );
+              })}
+
+            {/* Next */}
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={notificationPagination.page === notificationPagination.totalPages}
+              onClick={() =>
+                getNotifications({
+                  filterType,
+                  filterStatus,
+                  page: notificationPagination.page + 1,
+                })
+              }
+            >
+              Next
+            </Button>
+          </div>
+      </main>
       {notificationToDelete && (
         <div className="fixed inset-0 z-50 bg-black/20 backdrop-blur-sm flex items-center justify-center px-4">
           <div className="bg-white w-full max-w-md rounded-lg shadow-xl relative border border-gray-200">

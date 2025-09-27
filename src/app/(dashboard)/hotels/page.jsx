@@ -1,7 +1,7 @@
 "use client"
 
 import useAdminStore from "@/stores/useAdminStore"
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import {
   Search,
   Plus,
@@ -41,6 +41,7 @@ export default function HotelsPage() {
 
   const cancelDeleteRef = useRef(null);
 
+ 
   // modal state
   const [hotelToUpdate, setHotelToUpdate] = useState(null);
   const [hotelToDelete, setHotelToDelete] = useState(null);
@@ -187,14 +188,89 @@ export default function HotelsPage() {
     setErrors((p) => ({ ...p, image: undefined }));
   };
 
-  // validation (simple)
+  //validation for create form
   const validate = () => {
     const e = {};
-    if (!formData.name.trim()) e.name = "Name is required";
-    // add other validations if needed
+
+    // Hotel name
+    if (!formData.name?.trim()) {
+      e.name = "Hotel name is required";
+    }
+
+    // Details max length
+    if (formData.details && formData.details.length > 1000) {
+      e.details = "Details cannot exceed 1000 characters";
+    }
+
+    // Star rating between 1 and 5
+    const star = Number(formData.starRating);
+    if (formData.starRating !== undefined && formData.starRating !== null) {
+      if (Number.isNaN(star) || star < 1 || star > 5) {
+        e.starRating = "Star rating must be between 1 and 5";
+      }
+    }
+
+    // Pricing validations
+    const pricingFields = ["cpPrice", "apPrice", "mapPrice", "roomPrice", "extraBedPrice"];
+    pricingFields.forEach((field) => {
+      const value = Number(formData.pricing?.[field]);
+      if (field === "roomPrice" && (!formData.pricing?.[field] && formData.pricing?.[field] !== 0)) {
+        e[field] = "Room price is required";
+      } else if (value < 0 || Number.isNaN(value)) {
+        e[field] = `${field} cannot be negative`;
+      }
+    });
+
     setErrors(e);
     return Object.keys(e).length === 0;
   };
+
+  //validation for update form
+  // const validateHotelUpdate = (formData) => {
+  //   const e = {};
+
+  //   // Name
+  //   if (!formData.name?.trim()) {
+  //     e.name = "Hotel name is required";
+  //   }
+
+  //   // Details
+  //   if (formData.details && formData.details.length > 1000) {
+  //     e.details = "Details cannot exceed 1000 characters";
+  //   }
+
+  //   // Star rating
+  //   if (formData.starRating !== "" && formData.starRating !== undefined) {
+  //     const star = Number(formData.starRating);
+  //     if (Number.isNaN(star) || star < 1 || star > 5) {
+  //       e.starRating = "Star rating must be between 1 and 5";
+  //     }
+  //   }
+
+  //   // Pricing
+  //   const pricing = formData.pricing || {};
+    
+  //   if (pricing.cpPrice !== "" && pricing.cpPrice !== undefined) {
+  //     if (Number(pricing.cpPrice) < 0) e.cpPrice = "CP price cannot be negative";
+  //   }
+  //   if (pricing.apPrice !== "" && pricing.apPrice !== undefined) {
+  //     if (Number(pricing.apPrice) < 0) e.apPrice = "AP price cannot be negative";
+  //   }
+  //   if (pricing.mapPrice !== "" && pricing.mapPrice !== undefined) {
+  //     if (Number(pricing.mapPrice) < 0) e.mapPrice = "MAP price cannot be negative";
+  //   }
+  //   if (pricing.roomPrice === "" || pricing.roomPrice === undefined) {
+  //     e.roomPrice = "Room price is required";
+  //   } else if (Number(pricing.roomPrice) < 0) {
+  //     e.roomPrice = "Room price cannot be negative";
+  //   }
+  //   if (pricing.extraBedPrice !== "" && pricing.extraBedPrice !== undefined) {
+  //     if (Number(pricing.extraBedPrice) < 0) e.extraBedPrice = "Extra bed price cannot be negative";
+  //   }
+
+  //   return e;
+  // };
+
 
   // CREATE handler
   const handleSubmit = async (ev) => {
@@ -244,7 +320,8 @@ export default function HotelsPage() {
   const handleUpdateSubmit = async (e) => {
     e.preventDefault();
     if (!hotelToUpdate?._id) return;
-    // optional local validation
+  
+
     setSubmitting(true);
 
     try {
@@ -294,13 +371,24 @@ export default function HotelsPage() {
       setHotelToDelete(null);
     } catch (err) {
       console.error("Failed to delete hotel:", err);
-      alert(err?.response?.data?.message || err?.message || "Failed to delete hotel");
       setHotelToDelete(null);
     } finally {
       setSubmitting(false);
     }
   };
 
+
+  const [searchName, setSearchName] = useState("");
+  const [searchStar, setSearchStar] = useState("");
+
+  // Filtered hotels based on name and star rating
+  const filteredHotels = useMemo(() => {
+    return hotels.filter((hotel) => {
+      const matchesName = hotel.name.toLowerCase().includes(searchName.toLowerCase());
+      const matchesStar = searchStar ? hotel.starRating === Number(searchStar) : true;
+      return matchesName && matchesStar;
+    });
+  }, [hotels, searchName, searchStar]);
   // simple loading placeholder
   if (loadHotels && !hotels) {
     return (
@@ -311,139 +399,70 @@ export default function HotelsPage() {
   }
 
 
-  // const hotels = [
-  //   {
-  //     id: 1,
-  //     name: "The Grand Palace Hotel",
-  //     description:
-  //       "A 5-star luxury hotel located near the city center with premium facilities including spa, fine dining, and business center.",
-  //     location: "Mumbai, Maharashtra",
-  //     rating: 4.8,
-  //     reviews: 1247,
-  //     image: "https://wallpaperaccess.com/full/2690549.jpg",
-  //     pricing: {
-  //       cp: 2500,
-  //       ap: 3200,
-  //       map: 2800,
-  //       roomPrice: 4500,
-  //       extraBed: 800,
-  //     },
-  //     amenities: ["WiFi", "Pool", "Gym", "Spa", "Restaurant", "Parking"],
-  //     rooms: 120,
-  //     availability: "Available",
-  //     category: "5-star",
-  //   },
-  //   {
-  //     id: 2,
-  //     name: "Seaside Resort & Spa",
-  //     description: "Beachfront resort with stunning ocean views, water sports, and world-class spa facilities.",
-  //     location: "Goa",
-  //     rating: 4.5,
-  //     reviews: 892,
-  //     image: "https://wallpapercave.com/wp/wp1846068.jpg",
-  //     pricing: {
-  //       cp: 1800,
-  //       ap: 2400,
-  //       map: 2100,
-  //       roomPrice: 3200,
-  //       extraBed: 600,
-  //     },
-  //     amenities: ["WiFi", "Beach Access", "Pool", "Restaurant", "Water Sports"],
-  //     rooms: 85,
-  //     availability: "Limited",
-  //     category: "4-star",
-  //   },
-  // ]
-
-  // const filteredHotels = hotels.filter((hotel) => {
-  //   const matchesSearch =
-  //     hotel.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  //     hotel.location.toLowerCase().includes(searchTerm.toLowerCase())
-  //   const matchesRating =
-  //     filterRating === "all" ||
-  //     (filterRating === "5" && hotel.rating >= 4.5) ||
-  //     (filterRating === "4" && hotel.rating >= 4.0 && hotel.rating < 4.5) ||
-  //     (filterRating === "3" && hotel.rating >= 3.0 && hotel.rating < 4.0)
-  //   const matchesLocation = filterLocation === "all" || hotel.location.includes(filterLocation)
-
-  //   return matchesSearch && matchesRating && matchesLocation
-  // })
-
-  const getAmenityIcon = (amenity) => {
-    const icons = {
-      WiFi: Wifi,
-      Pool: Waves,
-      Gym: Dumbbell,
-      Restaurant: Utensils,
-      Parking: Car,
-      Spa: Coffee,
-    }
-    return icons[amenity] || Coffee
-  }
+  
 
   return (
-    <div className="bg-white flex min-h-screen lg:mt-0 mt-10">
+    <div className="bg-white flex min-h-screen lg:mt-0 mt-10 m-2">
       {/* Sidebar */}
       {/* <Sidebar active="Destinations" /> */}
-
       {/* Main Content */}
       <div className="flex-1 lg:p-8 space-y-10">
         <Header />
         {/* Header */}
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-4">
           <div>
             <h1 className="text-2xl font-semibold text-gray-900">Hotels Management</h1>
             <p className="text-gray-500 mt-1">Manage your hotel inventory and partnerships</p>
           </div>
+          
+          <div className="flex flex-col md:flex-row gap-3">
+            <input
+              type="text"
+              placeholder="Search by name"
+              value={searchName}
+              onChange={(e) => setSearchName(e.target.value)}
+              className="border rounded px-3 py-2 w-full md:w-64"
+            />
+            <select
+              value={searchStar}
+              onChange={(e) => setSearchStar(e.target.value)}
+              className="border rounded px-3 py-2 w-full md:w-40"
+            >
+              <option value="">All Stars</option>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <option key={star} value={star}>
+                  {star} Star{star > 1 ? "s" : ""}
+                </option>
+              ))}
+            </select>
+            <Button
+              onClick={() => {
+                setSearchName("");
+                setSearchStar("");
+              }}
+              className="bg-gray-400 hover:bg-gray-500"
+            >
+              Reset
+            </Button>
+          </div>
+
           <Button onClick={() => setHotelToCreate(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
             <Plus className="w-4 h-4 mr-2" />
             Add Hotel
           </Button>
         </div>
 
-        {/* Filters
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              placeholder="Search hotels by name or location..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <Select value={filterRating} onValueChange={setFilterRating}>
-            <SelectTrigger className="w-full md:w-48">
-              <SelectValue placeholder="Rating" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Ratings</SelectItem>
-              <SelectItem value="5">5 Star (4.5+)</SelectItem>
-              <SelectItem value="4">4 Star (4.0–4.4)</SelectItem>
-              <SelectItem value="3">3 Star (3.0–3.9)</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={filterLocation} onValueChange={setFilterLocation}>
-            <SelectTrigger className="w-full md:w-48">
-              <SelectValue placeholder="Location" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Locations</SelectItem>
-              <SelectItem value="Mumbai">Mumbai</SelectItem>
-              <SelectItem value="Goa">Goa</SelectItem>
-            </SelectContent>
-          </Select>
-        </div> */}
 
+        
         {/* Hotels Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {hotels.map((hotel) => (
+          {filteredHotels.map((hotel) => (
             <Card key={hotel._id} className="border rounded-lg overflow-hidden">
               <div className="flex flex-col md:flex-row">
                 {/* Image */}
                 <div className="md:w-1/3">
                   <img
-                    src={hotel.imageUrl}
+                    src={hotel.imageUrl || null}
                     alt={hotel.name}
                     className="w-full h-48 md:h-full object-cover"
                   />
@@ -483,7 +502,7 @@ export default function HotelsPage() {
           ))}
         </div>
 
-        {hotels.length === 0 && (
+        {filteredHotels.length === 0 && (
           <div className="text-center py-12 text-gray-500">No hotels found</div>
         )}
       </div>
@@ -511,8 +530,8 @@ export default function HotelsPage() {
               </div>
 
               <div className="flex justify-end gap-3 mt-6">
-                <button ref={cancelDeleteRef} onClick={() => setHotelToDelete(null)} className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition">Cancel</button>
-                <button onClick={handleDeleteConfirmed} className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition">Delete Hotel</button>
+                <button ref={cancelDeleteRef} onClick={() => setHotelToDelete(null)} className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition" disabled={submitting}>Cancel</button>
+                <button onClick={handleDeleteConfirmed} className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition" disabled={submitting}>{submitting ? "Deleting..." : "Delete Hotel"}</button>
               </div>
             </div>
           </div>
@@ -573,11 +592,11 @@ export default function HotelsPage() {
               </fieldset>
 
               <div className="flex justify-end gap-3 pt-4 border-t">
-                <Button type="button" onClick={() => { setHotelToUpdate(null); setFormData(initialForm); setImageFile(null); setImagePreview(""); }} className="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-700">
+                <Button type="button" onClick={() => { setHotelToUpdate(null); setFormData(initialForm); setImageFile(null); setImagePreview(""); }} className="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-700"disabled={submitting}>
                   Cancel
                 </Button>
-                <Button type="submit" className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700">
-                  Save Changes
+                <Button type="submit" className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700" disabled={submitting}>
+                  {submitting ? "Saving..." : "Save Changes"}
                 </Button>
               </div>
             </form>
@@ -606,12 +625,14 @@ export default function HotelsPage() {
                 <label className="flex flex-col">
                   <span className="text-sm font-medium">Star Rating</span>
                   <input name="starRating" value={formData.starRating} onChange={handleChange} inputMode="numeric" className="border rounded px-3 py-2" placeholder="e.g. 3" />
+                  {errors.starRating && <span className="text-xs text-red-500 mt-1">{errors.starRating}</span>}
                 </label>
               </div>
 
               <label className="flex flex-col">
                 <span className="text-sm font-medium">Details</span>
                 <textarea name="details" value={formData.details} onChange={handleChange} className="border rounded px-3 py-2" placeholder="Short description" />
+                {errors.details && <span className="text-xs text-red-500 mt-1">{errors.details}</span>}
               </label>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -638,13 +659,73 @@ export default function HotelsPage() {
               <fieldset className="shadow-lg p-3 rounded">
                 <legend className="text-sm font-semibold">Pricing (flat keys)</legend>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
-                  <label className="flex flex-col"><span className="text-xs">CP Price (₹)</span><input name="pricing.cpPrice" value={formData.pricing.cpPrice} onChange={handleChange} inputMode="numeric" className="border rounded px-2 py-2" placeholder="e.g. 2000" /></label>
-                  <label className="flex flex-col"><span className="text-xs">AP Price (₹)</span><input name="pricing.apPrice" value={formData.pricing.apPrice} onChange={handleChange} inputMode="numeric" className="border rounded px-2 py-2" /></label>
-                  <label className="flex flex-col"><span className="text-xs">MAP Price (₹)</span><input name="pricing.mapPrice" value={formData.pricing.mapPrice} onChange={handleChange} inputMode="numeric" className="border rounded px-2 py-2" /></label>
-                  <label className="flex flex-col"><span className="text-xs">Room Price (₹)</span><input name="pricing.roomPrice" value={formData.pricing.roomPrice} onChange={handleChange} inputMode="numeric" className="border rounded px-2 py-2" placeholder="e.g. 3500" /></label>
-                  <label className="flex flex-col"><span className="text-xs">Extra Bed Price (₹)</span><input name="pricing.extraBedPrice" value={formData.pricing.extraBedPrice} onChange={handleChange} inputMode="numeric" className="border rounded px-2 py-2" placeholder="e.g. 500" /></label>
+
+                  <label className="flex flex-col">
+                    <span className="text-xs">CP Price (₹)</span>
+                    <input
+                      name="pricing.cpPrice"
+                      value={formData.pricing.cpPrice}
+                      onChange={handleChange}
+                      inputMode="numeric"
+                      className="border rounded px-2 py-2"
+                      placeholder="e.g. 2000"
+                    />
+                    {errors.cpPrice && <span className="text-xs text-red-500 mt-1">{errors.cpPrice}</span>}
+                  </label>
+
+                  <label className="flex flex-col">
+                    <span className="text-xs">AP Price (₹)</span>
+                    <input
+                      name="pricing.apPrice"
+                      value={formData.pricing.apPrice}
+                      onChange={handleChange}
+                      inputMode="numeric"
+                      className="border rounded px-2 py-2"
+                    />
+                    {errors.apPrice && <span className="text-xs text-red-500 mt-1">{errors.apPrice}</span>}
+                  </label>
+
+                  <label className="flex flex-col">
+                    <span className="text-xs">MAP Price (₹)</span>
+                    <input
+                      name="pricing.mapPrice"
+                      value={formData.pricing.mapPrice}
+                      onChange={handleChange}
+                      inputMode="numeric"
+                      className="border rounded px-2 py-2"
+                    />
+                    {errors.mapPrice && <span className="text-xs text-red-500 mt-1">{errors.mapPrice}</span>}
+                  </label>
+
+                  <label className="flex flex-col">
+                    <span className="text-xs">Room Price (₹)</span>
+                    <input
+                      name="pricing.roomPrice"
+                      value={formData.pricing.roomPrice}
+                      onChange={handleChange}
+                      inputMode="numeric"
+                      className="border rounded px-2 py-2"
+                      placeholder="e.g. 3500"
+                    />
+                    {errors.roomPrice && <span className="text-xs text-red-500 mt-1">{errors.roomPrice}</span>}
+                  </label>
+
+                  <label className="flex flex-col">
+                    <span className="text-xs">Extra Bed Price (₹)</span>
+                    <input
+                      name="pricing.extraBedPrice"
+                      value={formData.pricing.extraBedPrice}
+                      onChange={handleChange}
+                      inputMode="numeric"
+                      className="border rounded px-2 py-2"
+                      placeholder="e.g. 500"
+                    />
+                    {errors.extraBedPrice && <span className="text-xs text-red-500 mt-1">{errors.extraBedPrice}</span>}
+                  </label>
+
                 </div>
               </fieldset>
+
 
               <div className="flex justify-end gap-3 pt-4 border-t">
                 <button type="button" onClick={() => { setFormData(initialForm); setImageFile(null); if (imagePreview && imagePreview.startsWith("blob:")) URL.revokeObjectURL(imagePreview); setImagePreview(""); setErrors({});setHotelToCreate(false) }} className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300" disabled={submitting}>Cancel</button>

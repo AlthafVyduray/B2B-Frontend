@@ -1,7 +1,7 @@
 "use client"
 
 import useAdminStore from "@/stores/useAdminStore"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -31,6 +31,10 @@ import Header from "@/app/components/admin/Hearder"
 export default function VehiclesPage() {
 
 
+  
+
+
+
   const { vehicles, getVehicles, deleteVehicle, updateVehicle } = useAdminStore();
 
   const [vehicleToDelete, setVehicleToDelete] = useState(null);
@@ -43,9 +47,26 @@ export default function VehiclesPage() {
     price: ""
   });
 
+  const [filterName, setFilterName] = useState("");
+  const [filterType, setFilterType] = useState("");
+
+  // Extract unique vehicle types dynamically
+  const vehicleTypes = useMemo(() => {
+    const types = vehicles.map((v) => v.type).filter(Boolean); // remove null/undefined
+    return [...new Set(types)]; // unique types
+  }, [vehicles]);
+
+  // Apply filters
+  const filteredVehicles = useMemo(() => {
+    return vehicles.filter((v) => {
+      const matchesName = v.name.toLowerCase().includes(filterName.toLowerCase());
+      const matchesType = filterType ? v.type === filterType : true;
+      return matchesName && matchesType;
+    });
+  }, [vehicles, filterName, filterType]);
+
   useEffect(() => {
     getVehicles();
-    console.log(vehicleToUpdate)
   }, [vehicleToUpdate]);
   
 
@@ -99,107 +120,6 @@ export default function VehiclesPage() {
 
   
 
-  // Sample vehicle data with more realistic information
-  // const vehicles = [
-  //   {
-  //     id: 1,
-  //     name: "Toyota Innova Crysta",
-  //     type: "SUV",
-  //     capacity: 7,
-  //     price: 3500,
-  //     status: "available",
-  //     rating: 4.8,
-  //     bookings: 156,
-  //     fuelType: "Diesel",
-  //     year: 2022,
-  //     location: "Mumbai",
-  //     driver: "Rajesh Kumar",
-  //     features: ["AC", "GPS", "Music System", "First Aid"],
-  //     image: "/toyota-innova-white.jpg",
-  //   },
-  //   {
-  //     id: 2,
-  //     name: "Mahindra Scorpio",
-  //     type: "SUV",
-  //     capacity: 8,
-  //     price: 2800,
-  //     status: "booked",
-  //     rating: 4.5,
-  //     bookings: 89,
-  //     fuelType: "Diesel",
-  //     year: 2021,
-  //     location: "Delhi",
-  //     driver: "Amit Singh",
-  //     features: ["AC", "GPS", "Bluetooth"],
-  //     image: "/mahindra-scorpio-black.jpg",
-  //   },
-  //   {
-  //     id: 3,
-  //     name: "Tempo Traveller",
-  //     type: "Bus",
-  //     capacity: 12,
-  //     price: 4500,
-  //     status: "maintenance",
-  //     rating: 4.2,
-  //     bookings: 234,
-  //     fuelType: "Diesel",
-  //     year: 2020,
-  //     location: "Bangalore",
-  //     driver: "Suresh Reddy",
-  //     features: ["AC", "Reclining Seats", "Entertainment System"],
-  //     image: "/tempo-traveller-white.jpg",
-  //   },
-  //   {
-  //     id: 4,
-  //     name: "Maruti Swift Dzire",
-  //     type: "Sedan",
-  //     capacity: 4,
-  //     price: 1800,
-  //     status: "available",
-  //     rating: 4.6,
-  //     bookings: 67,
-  //     fuelType: "Petrol",
-  //     year: 2023,
-  //     location: "Pune",
-  //     driver: "Vikram Patil",
-  //     features: ["AC", "GPS", "Bluetooth", "USB Charging"],
-  //     image: "/maruti-swift-dzire-silver.jpg",
-  //   },
-  //   {
-  //     id: 5,
-  //     name: "Force Urbania",
-  //     type: "Van",
-  //     capacity: 13,
-  //     price: 5200,
-  //     status: "available",
-  //     rating: 4.7,
-  //     bookings: 178,
-  //     fuelType: "Diesel",
-  //     year: 2022,
-  //     location: "Goa",
-  //     driver: "Carlos D'Souza",
-  //     features: ["AC", "Captain Seats", "Entertainment", "Mini Fridge"],
-  //     image: "/force-urbania-white.jpg",
-  //   },
-  //   {
-  //     id: 6,
-  //     name: "Tata Nexon",
-  //     type: "SUV",
-  //     capacity: 5,
-  //     price: 2200,
-  //     status: "available",
-  //     rating: 4.4,
-  //     bookings: 45,
-  //     fuelType: "Electric",
-  //     year: 2023,
-  //     location: "Chennai",
-  //     driver: "Murugan S",
-  //     features: ["AC", "GPS", "Fast Charging", "Digital Display"],
-  //     image: "/tata-nexon-blue.jpg",
-  //   },
-  // ]
-
-
   const getVehicleIcon = (type) => {
     switch (type.toLowerCase()) {
       case "suv":
@@ -213,38 +133,6 @@ export default function VehiclesPage() {
     }
   }
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "available":
-        return "bg-green-100 text-green-800 border-green-200"
-      case "booked":
-        return "bg-blue-100 text-blue-800 border-blue-200"
-      case "maintenance":
-        return "bg-orange-100 text-orange-800 border-orange-200"
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200"
-    }
-  }
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case "available":
-        return <CheckCircle className="h-4 w-4" />
-      case "booked":
-        return <Clock className="h-4 w-4" />
-      case "maintenance":
-        return <AlertCircle className="h-4 w-4" />
-      default:
-        return null
-    }
-  }
-
-  // Calculate statistics
-  const totalVehicles = vehicles.length
-  const availableVehicles = vehicles.filter((v) => v.status === "available").length
-  const bookedVehicles = vehicles.filter((v) => v.status === "booked").length
-  const maintenanceVehicles = vehicles.filter((v) => v.status === "maintenance").length
-  const totalRevenue = vehicles.reduce((sum, v) => sum + v.bookings * v.price, 0)
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -253,26 +141,61 @@ export default function VehiclesPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 text-balance">Vehicle Fleet Management</h1>
-            <p className="text-gray-600 mt-1">Manage your travel agency vehicle fleet</p>
+            <h1 className="text-3xl font-bold text-gray-900 text-balance">
+              Vehicle Fleet Management
+            </h1>
+            <p className="text-gray-600 mt-1">
+              Manage your travel agency vehicle fleet
+            </p>
           </div>
-          <Button onClick={() => setVehicleToCreate(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
+          <Button
+            onClick={() => setVehicleToCreate(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
             <Plus className="h-4 w-4 mr-2" />
             Add Vehicle
           </Button>
         </div>
 
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-4 bg-gray-50 p-4 rounded-lg border">
+          <input
+            type="text"
+            placeholder="Search by name..."
+            value={filterName}
+            onChange={(e) => setFilterName(e.target.value)}
+            className="px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:border-blue-300 w-full sm:w-1/2"
+          />
+
+          <select
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value)}
+            className="px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:border-blue-300 w-full sm:w-1/4"
+          >
+            <option value="">All Types</option>
+            {vehicleTypes.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
+          </select>
+        </div>
 
         {/* Vehicle Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          {vehicles.map((vehicle) => (
-            <Card key={vehicle._id} className="hover:shadow-lg transition-shadow duration-200">
+          {filteredVehicles.map((vehicle) => (
+            <Card
+              key={vehicle._id}
+              className="hover:shadow-lg transition-shadow duration-200"
+            >
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
                     {getVehicleIcon(vehicle.type)}
                     <div>
-                      <CardTitle className="text-lg font-semibold text-gray-900">{vehicle.name}</CardTitle>
+                      <CardTitle className="text-lg font-semibold text-gray-900">
+                        {vehicle.name}
+                      </CardTitle>
                       <p className="text-md text-gray-900">{vehicle.type}</p>
                     </div>
                   </div>
@@ -288,23 +211,36 @@ export default function VehiclesPage() {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div className="flex items-center gap-2">
                     <Users className="h-4 w-4 text-gray-500" />
-                    <span className="text-gray-600">Capacity: {vehicle.capacity}</span>
+                    <span className="text-gray-600">
+                      Capacity: {vehicle.capacity}
+                    </span>
                   </div>
                 </div>
 
                 {/* Driver Info */}
                 <div className="bg-gray-50 rounded-lg p-3">
-                  <p className="text-lg font-bold text-blue-600 mt-1">₹{vehicle.price}/day</p>
+                  <p className="text-lg font-bold text-blue-600 mt-1">
+                    ₹{vehicle.price}/day
+                  </p>
                 </div>
-
 
                 {/* Actions */}
                 <div className="flex gap-2 pt-2">
-                  <Button onClick={() => openUpdateModal(vehicle)} variant="outline" size="sm" className="flex-1 bg-transparent">
+                  <Button
+                    onClick={() => openUpdateModal(vehicle)}
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 bg-transparent"
+                  >
                     <Edit className="h-4 w-4 mr-1" />
                     Edit
                   </Button>
-                  <Button onClick={() => setVehicleToDelete(vehicle)} variant="outline" size="sm" className="text-red-600 hover:text-red-700 flex-1 bg-transparent">
+                  <Button
+                    onClick={() => setVehicleToDelete(vehicle)}
+                    variant="outline"
+                    size="sm"
+                    className="text-red-600 hover:text-red-700 flex-1 bg-transparent"
+                  >
                     <Trash2 className="h-4 w-4" />
                     Delete
                   </Button>
@@ -313,7 +249,14 @@ export default function VehiclesPage() {
             </Card>
           ))}
         </div>
+
+        {filteredVehicles.length === 0 && (
+          <div className="text-center py-12 text-gray-500">
+            No vehicles found
+          </div>
+        )}
       </div>
+
       
       {/* Delete Confirmation Modal */}
       {vehicleToDelete && (

@@ -64,7 +64,7 @@ export default function SettingsPage() {
   return (
     <div>
       <Header />
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="min-h-screen flex items-center justify-center bg-white px-4 m-2">
       <Card className="w-full max-w-md shadow-xl rounded-2xl">
         <CardContent className="p-6 space-y-6">
           <h2 className="text-2xl font-bold text-center text-blue-700">

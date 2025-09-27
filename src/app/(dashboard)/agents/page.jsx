@@ -45,6 +45,7 @@ export default function AgentsPage() {
       setPage(1);
     } 
   }, [searchField, searchValue]);
+  
 
 
   // Fetch whenever page changes (user navigation)
@@ -52,32 +53,7 @@ export default function AgentsPage() {
     getAgents({ searchField, searchValue, page });
   }, [page]);
 
-  // // derive available states from agents (unique & sorted)
-  // const availableStates = useMemo(() => {
-  //   const set = new Set();
-  //   (agents || []).forEach((a) => {
-  //     if (a?.state) set.add(String(a.state).trim());
-  //   });
-  //   return Array.from(set).sort((a, b) => a.localeCompare(b));
-  // }, [agents]);
-
-  // const filteredAgents = useMemo(() => {
-  //   const list = agents || [];
-  //   if (!searchField || !searchValue) return list;
-
-  //   const key = FIELD_MAP[searchField]; // e.g. 'name' -> 'fullName'
-  //   const q = String(searchValue).toLowerCase().trim();
-
-  //   return list.filter((a) => {
-  //     const val = String(a?.[key] ?? "").toLowerCase();
-  //     return val.includes(q);
-  //   });
-  // }, [agents, searchField, searchValue]);
-
-  // const clearFilter = () => {
-  //   setSearchField("");
-  //   setSearchValue("");
-  // };
+ 
 
   const getStatusBadge = (status) => {
     const variants = {
@@ -194,7 +170,7 @@ export default function AgentsPage() {
                     />
                   </div>
 
-                  <Button variant="outline" size="sm" className="sm:w-auto w-full">
+                  <Button variant="outline" size="sm" className="sm:w-auto w-full" disabled>
                     <Filter className="h-4 w-4 mr-2" />
                     Filter
                   </Button>

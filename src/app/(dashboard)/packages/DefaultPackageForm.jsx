@@ -7,12 +7,14 @@ const PLACEHOLDER_SVG =
 
 const makeId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
-export default function DefaultPackageForm({ onCloseCreateForm }) {
+export default function DefaultPackageForm({ onCloseCreateDefault, createDefaultPackages }) {
+
+  //form for creating default package
   const [form, setForm] = useState({
     package_name: "",
     departure: "",
     days: 1, // default to 1 so UI shows one itinerary field
-    nights: "",
+    nights: 0,
     inclusions: [""],
     pricing: { adult: "", childWithBed: "", childWithoutBed: "", infant: "" },
   });
@@ -20,6 +22,7 @@ export default function DefaultPackageForm({ onCloseCreateForm }) {
   const [itineraries, setItineraries] = useState([
     { id: makeId(), day_number: 1, description: "", file: null, preview: "" },
   ]);
+
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -33,6 +36,7 @@ export default function DefaultPackageForm({ onCloseCreateForm }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  //handling the form change
   const handleFormChange = (e) => {
     const { name, value } = e.target;
     // support nested flight fields with dot notation: flight_details.from
@@ -57,8 +61,11 @@ export default function DefaultPackageForm({ onCloseCreateForm }) {
       return { ...p, inclusions: inc };
     });
   };
+
+  //these functions are for creating and removing the inclusion input field
   const addInclusion = () => setForm((p) => ({ ...p, inclusions: [...p.inclusions, ""] }));
   const removeInclusion = (idx) => setForm((p) => ({ ...p, inclusions: p.inclusions.filter((_, i) => i !== idx) }));
+
 
   // New: when days changes, ensure itineraries array length matches days
   const handleDaysChange = (e) => {
@@ -103,6 +110,8 @@ export default function DefaultPackageForm({ onCloseCreateForm }) {
     });
   };
 
+
+  //handling itinerary description change
   const handleItineraryDescChange = (idx, value) => {
     setItineraries((prev) => {
       const copy = [...prev];
@@ -111,6 +120,7 @@ export default function DefaultPackageForm({ onCloseCreateForm }) {
     });
   };
 
+  //handling itinerary file change
   const handleItineraryFileChange = (idx, file) => {
     setItineraries((prev) => {
       const copy = [...prev];
@@ -144,104 +154,165 @@ export default function DefaultPackageForm({ onCloseCreateForm }) {
       return newArr;
     });
   };
+ 
+// Validating Default Package form
+const validate = () => {
+  const e = {};
 
-  const validate = () => {
-    const e = {};
-    if (!form.package_name?.trim()) e.package_name = "Package name is required";
-    if (!form.departure?.trim()) e.departure = "Departure (eg. Every Friday) is required";
-    const daysNum = Number(form.days) || 0;
-    if (!daysNum || daysNum < 1) e.days = "Days must be at least 1";
-    if (itineraries.length !== daysNum) {
-      e.itineraries = `Itineraries count (${itineraries.length}) must match days (${daysNum})`;
-    }
-    itineraries.forEach((it, idx) => {
-      if (!it.description?.trim()) e[`it_${idx}`] = `Description for day ${idx + 1} is required`;
-      if (!it.file) e[`file_${idx}`] = `Image for day ${idx + 1} is required`;
-    });
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  };
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  if (!validate()) return;
-
-  setSubmitting(true);
-  try {
-    // Build itinerary payload (day_number, description, keep existingImage if any)
-    const itineraryPayload = itineraries.map((it) => ({
-      day_number: it.day_number,
-      description: it.description,
-      existingImage: it.existingImage || "",
-    }));
-
-    // Basic client-side checks
-    if (itineraryPayload.length > 10) {
-      throw new Error("Maximum 10 itinerary days/images allowed");
-    }
-    const filesCount = itineraries.filter((it) => it.file).length;
-    if (filesCount !== itineraries.length) {
-      throw new Error("Please attach one image per itinerary day");
-    }
-
-    // Build FormData
-    const fd = new FormData();
-    fd.append("package_name", form.package_name);        // required
-    fd.append("departure", form.departure);              // required for default packages
-    if (form.nights !== "") fd.append("nights", String(form.nights));
-    fd.append("days", String(form.days ?? itineraryPayload.length));
-    // flight_details, inclusions, pricing must be JSON strings (controller can parse)
-    fd.append("flight_details", JSON.stringify(form.flight_details || {}));
-    fd.append(
-      "inclusions",
-      JSON.stringify((form.inclusions || []).filter((inc) => inc && inc.toString().trim().length > 0))
-    );
-    fd.append("pricing", JSON.stringify(form.pricing || {}));
-
-    // Append itineraries metadata (no file paths)
-    fd.append("itineraries", JSON.stringify(itineraryPayload));
-
-    // Append files in same order so req.files[i] corresponds to itinerary[i]
-    // field name MUST be 'itineraryImages' (multer.array('itineraryImages', 10))
-    itineraries.forEach((it) => {
-      if (it.file) {
-        // include a sensible filename to help debugging
-        fd.append("itineraryImages", it.file, `day-${it.day_number}-${it.file.name}`);
-      }
-    });
-
-    // Call store action if available; otherwise POST directly to /admin/packages/default-package
-    if (typeof createDefaultPackage === "function") {
-      await createDefaultPackage(fd);
-    } else {
-      // IMPORTANT: do NOT set Content-Type header manually
-      await axiosInstance.post("/admin/packages/default-package", fd);
-    }
-
-    // reset UI (revoke blobs, clear form)
-    setForm({
-      package_name: "",
-      departure: "",
-      days: 1,
-      nights: "",
-      inclusions: [""],
-      pricing: { adult: "", childWithBed: "", childWithoutBed: "", infant: "" },
-    });
-    itineraries.forEach((it) => {
-      if (it.preview && it.preview.startsWith("blob:")) URL.revokeObjectURL(it.preview);
-    });
-    setItineraries([{ id: makeId(), day_number: 1, description: "", file: null, preview: "", existingImage: "" }]);
-    setErrors({});
-    
-  } catch (err) {
-    console.error("Create default package failed:", err);
-    // prefer server message when available
-    const message = err?.response?.data?.message || err?.message || "Failed to create default package";
-    alert(message);
-  } finally {
-    setSubmitting(false);
-    onCloseCreateForm()
+  // ---------------------------
+  // Package name & departure
+  // ---------------------------
+  if (!form.package_name?.trim()) {
+    e.package_name = "Package name is required";
   }
+  if (!form.departure?.trim()) {
+    e.departure = "Departure (eg. Every Friday) is required";
+  }
+
+  // ---------------------------
+  // Nights validation
+  // ---------------------------
+  const nightsNum = Number(form.nights);
+  if (!Number.isInteger(nightsNum) || nightsNum < 0) {
+    e.nights = "Nights must be a non-negative integer";
+  }
+
+  // ---------------------------
+  // Days validation
+  // ---------------------------
+  const daysNum = Number(form.days);
+  if (!Number.isInteger(daysNum) || daysNum < 1) {
+    e.days = "Days must be at least 1";
+  }
+
+  // Days must equal nights + 1
+  if (
+    Number.isInteger(nightsNum) &&
+    nightsNum >= 0 &&
+    Number.isInteger(daysNum) &&
+    daysNum >= 1 &&
+    daysNum !== nightsNum + 1
+  ) {
+    e.days = "Days must always equal Nights + 1";
+  }
+
+  // ---------------------------
+  // Itineraries count must match days
+  // ---------------------------
+  if (itineraries.length !== daysNum) {
+    e.itineraries = `Itineraries count (${itineraries.length}) must match days (${daysNum})`;
+  }
+
+  // ---------------------------
+  // Itinerary details validation
+  // ---------------------------
+  itineraries.forEach((it, idx) => {
+    if (!it.description?.trim()) {
+      e[`it_${idx}`] = `Description for day ${idx + 1} is required`;
+    }
+    if (!it.file && !it.existingImage) {
+      e[`file_${idx}`] = `Image for day ${idx + 1} is required`;
+    }
+  });
+
+  // ---------------------------
+  // Pricing validation (optional but recommended)
+  // ---------------------------
+  if (!form.pricing) {
+    e.pricing = "Pricing information is required";
+  } else {
+    const { adult, childWithBed, childWithoutBed, infant } = form.pricing;
+    if (adult == null || adult < 0) e.adult = "Adult price required and must be >= 0";
+    if (childWithBed == null || childWithBed < 0) e.childWithBed = "Child with bed price required and must be >= 0";
+    if (childWithoutBed == null || childWithoutBed < 0) e.childWithoutBed = "Child without bed price required and must be >= 0";
+    if (infant == null || infant < 0) e.infant = "Infant price required and must be >= 0";
+  }
+
+  // ---------------------------
+  // Finalize
+  // ---------------------------
+  setErrors(e);
+  return Object.keys(e).length === 0;
 };
+
+
+  //handling submit
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validate()) return;
+
+    setSubmitting(true);
+    try {
+      // Build itinerary payload (day_number, description, keep existingImage if any)
+      const itineraryPayload = itineraries.map((it) => ({
+        day_number: it.day_number,
+        description: it.description,
+        existingImage: it.existingImage || "",
+      }));
+
+      // Basic client-side checks
+      if (itineraryPayload.length > 10) {
+        throw new Error("Maximum 10 itinerary days/images allowed");
+      }
+      const filesCount = itineraries.filter((it) => it.file).length;
+      if (filesCount !== itineraries.length) {
+        throw new Error("Please attach one image per itinerary day");
+      }
+
+      // Build FormData
+      const fd = new FormData();
+      fd.append("package_name", form.package_name);        // required
+      fd.append("departure", form.departure);              // required for default packages
+      if (form.nights !== "") fd.append("nights", String(form.nights));
+      fd.append("days", String(form.days ?? itineraryPayload.length));
+      // flight_details, inclusions, pricing must be JSON strings (controller can parse)
+      fd.append("flight_details", JSON.stringify(form.flight_details || {}));
+      fd.append(
+        "inclusions",
+        JSON.stringify((form.inclusions || []).filter((inc) => inc && inc.toString().trim().length > 0))
+      );
+      fd.append("pricing", JSON.stringify(form.pricing || {}));
+
+      // Append itineraries metadata (no file paths)
+      fd.append("itineraries", JSON.stringify(itineraryPayload));
+
+      // Append files in same order so req.files[i] corresponds to itinerary[i]
+      // field name MUST be 'itineraryImages' (multer.array('itineraryImages', 10))
+      itineraries.forEach((it) => {
+        if (it.file) {
+          // include a sensible filename to help debugging
+          fd.append("itineraryImages", it.file, `day-${it.day_number}-${it.file.name}`);
+        }
+      });
+
+    
+      await createDefaultPackages(fd);
+
+      // reset UI (revoke blobs, clear form)
+      setForm({
+        package_name: "",
+        departure: "",
+        days: 1,
+        nights: 0,
+        inclusions: [""],
+        pricing: { adult: "", childWithBed: "", childWithoutBed: "", infant: "" },
+      });
+      itineraries.forEach((it) => {
+        if (it.preview && it.preview.startsWith("blob:")) URL.revokeObjectURL(it.preview);
+      });
+      setItineraries([{ id: makeId(), day_number: 1, description: "", file: null, preview: "", existingImage: "" }]);
+      setErrors({});
+      
+    } catch (err) {
+      console.error("Create default package failed:", err);
+      // prefer server message when available
+      const message = err?.response?.data?.message || err?.message || "Failed to create default package";
+      alert(message);
+    } finally {
+      setSubmitting(false);
+      onCloseCreateDefault()
+    }
+  };
 
 
 
@@ -257,7 +328,7 @@ const handleSubmit = async (e) => {
                 itineraries.forEach((it) => {
                   if (it.preview && it.preview.startsWith("blob:")) URL.revokeObjectURL(it.preview);
                 });
-                if (onCloseCreateForm) onCloseCreateForm();
+                if (onCloseCreateDefault) onCloseCreateDefault();
               }}
               className="p-1"
               aria-label="Close"
@@ -311,6 +382,7 @@ const handleSubmit = async (e) => {
                 className="mt-2 w-full border rounded px-3 py-2"
                 inputMode="numeric"
               />
+              {errors.nights && <p className="text-xs text-red-500 mt-1">{errors.nights}</p>}
             </div>
           </div>
 
@@ -466,7 +538,7 @@ const handleSubmit = async (e) => {
                 });
                 setItineraries([{ id: makeId(), day_number: 1, description: "", file: null, preview: "" }]);
                 setErrors({});
-                if (onCloseCreateForm) onCloseCreateForm();
+                if (onCloseCreateDefault) onCloseCreateDefault();
               }}
               className="px-4 py-2 rounded bg-gray-200"
               disabled={submitting}

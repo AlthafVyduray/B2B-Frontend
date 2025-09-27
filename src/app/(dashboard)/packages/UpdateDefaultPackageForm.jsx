@@ -1,24 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
-import { axiosInstance } from "@/lib/axios";
 
 const PLACEHOLDER_SVG =
   "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='300'><rect width='100%' height='100%' fill='%23e5e7eb'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%23999' font-size='20'>No image</text></svg>";
 
 const makeId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
-/**
- * UpdateDefaultPackageForm
- * - toEditDefault: the existing package object to edit (optional; if omitted form acts like "create")
- * - onClose: called when user cancels/closes
- * - onUpdated: called with server response after successful update/create
- */
-export default function UpdateDefaultPackageForm({ toEditDefault = null, onClose, onUpdated }) {
+export default function UpdateDefaultPackageForm({ toEditDefault, onCloseEditDefault, updateDefaultPackage }) {
   const initialForm = {
     package_name: "",
     departure: "",
     days: 1,
-    nights: "",
+    nights: 0,
     inclusions: [""],
     pricing: { adult: "", childWithBed: "", childWithoutBed: "", infant: "" },
   };
@@ -27,7 +20,7 @@ export default function UpdateDefaultPackageForm({ toEditDefault = null, onClose
 
   // itineraries hold: { id, day_number, description, file, preview, existingImage, removed }
   const [itineraries, setItineraries] = useState([
-    { id: makeId(), day_number: 1, description: "", file: null, preview: "", existingImage: "" },
+    { id: makeId(), day_number: 1, description: "", file: null, preview: "", existingImage: "", removed: false },
   ]);
 
   const [errors, setErrors] = useState({});
@@ -41,7 +34,7 @@ export default function UpdateDefaultPackageForm({ toEditDefault = null, onClose
       package_name: toEditDefault.package_name ?? "",
       departure: toEditDefault.departure ?? "",
       days: Number(toEditDefault.days) || 1,
-      nights: toEditDefault.nights ?? "",
+      nights: Number(toEditDefault.nights) || 0,
       inclusions: Array.isArray(toEditDefault.inclusions) && toEditDefault.inclusions.length
         ? toEditDefault.inclusions
         : [""],
@@ -60,19 +53,19 @@ export default function UpdateDefaultPackageForm({ toEditDefault = null, onClose
         file: null,
         preview: existingImage || "",
         existingImage: existingImage || "",
-        removed: false, // set true when user removes the existing image
+        removed: false,
       };
     });
 
     if (mapped.length > 0) {
       setItineraries(mapped);
     } else {
-      setItineraries([{ id: makeId(), day_number: 1, description: "", file: null, preview: "", existingImage: "" }]);
+      setItineraries([{ id: makeId(), day_number: 1, description: "", file: null, preview: "", existingImage: "", removed: false }]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toEditDefault]);
 
-  // cleanup blob urls when unmount or when preview changes removed
+  // cleanup blob urls when unmount
   useEffect(() => {
     return () => {
       itineraries.forEach((it) => {
@@ -84,27 +77,30 @@ export default function UpdateDefaultPackageForm({ toEditDefault = null, onClose
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // generic form change (supports pricing.key via "pricing.key")
   const handleFormChange = (e) => {
     const { name, value } = e.target;
     if (name.startsWith("pricing.")) {
       const key = name.split(".")[1];
-      setForm((p) => ({ ...p, pricing: { ...p.pricing, [key]: value } }));
+      setForm((p) => ({ ...p, pricing: { ...p.pricing, [key]: value ?? "" } }));
       return;
     }
-    setForm((p) => ({ ...p, [name]: value }));
+    // inclusions are handled separately in UI (below)
+    setForm((p) => ({ ...p, [name]: value ?? "" }));
   };
 
-  // same days -> itineraries sync as create form
+  // Days handler: ensure integer >= 1 and sync nights = days - 1
   const handleDaysChange = (e) => {
-    let val = e.target.value;
-    if (val === "") {
+    const raw = e.target.value;
+    // keep controlled: if empty, set to "" (but we'll coerce to 1 when validating / when user blurs)
+    if (raw === "") {
       setForm((p) => ({ ...p, days: "" }));
       return;
     }
-    let num = Number(val);
+    let num = Number(raw);
     if (Number.isNaN(num) || num < 1) num = 1;
     num = Math.floor(num);
-    setForm((p) => ({ ...p, days: num }));
+    setForm((p) => ({ ...p, days: num, nights: Math.max(0, num - 1) }));
 
     setItineraries((prev) => {
       const prevCopy = [...prev];
@@ -114,7 +110,7 @@ export default function UpdateDefaultPackageForm({ toEditDefault = null, onClose
       if (num > currentLen) {
         const toAdd = [];
         for (let i = currentLen + 1; i <= num; i++) {
-          toAdd.push({ id: makeId(), day_number: i, description: "", file: null, preview: "", existingImage: "" });
+          toAdd.push({ id: makeId(), day_number: i, description: "", file: null, preview: "", existingImage: "", removed: false });
         }
         return [...prevCopy, ...toAdd];
       } else {
@@ -130,33 +126,69 @@ export default function UpdateDefaultPackageForm({ toEditDefault = null, onClose
     });
   };
 
+  // Nights handler: ensure integer >= 0 and sync days = nights + 1
+  const handleNightsChange = (e) => {
+    const raw = e.target.value;
+    if (raw === "") {
+      // keep controlled — set to empty string (but prefer 0)
+      setForm((p) => ({ ...p, nights: "" }));
+      return;
+    }
+    let num = Number(raw);
+    if (Number.isNaN(num) || num < 0) num = 0;
+    num = Math.floor(num);
+    const computedDays = Math.max(1, num + 1);
+    setForm((p) => ({ ...p, nights: num, days: computedDays }));
+
+    setItineraries((prev) => {
+      const currentLen = prev.length;
+      if (computedDays === currentLen) return prev;
+      if (computedDays > currentLen) {
+        const toAdd = [];
+        for (let i = currentLen + 1; i <= computedDays; i++) {
+          toAdd.push({ id: makeId(), day_number: i, description: "", file: null, preview: "", existingImage: "", removed: false });
+        }
+        return [...prev, ...toAdd];
+      } else {
+        for (let i = computedDays; i < prev.length; i++) {
+          const rem = prev[i];
+          if (rem && rem.preview && rem.preview.startsWith("blob:")) URL.revokeObjectURL(rem.preview);
+        }
+        return prev.slice(0, computedDays).map((it, idx) => ({ ...it, day_number: idx + 1 }));
+      }
+    });
+  };
+
+  // itinerary description
   const handleItineraryDescChange = (idx, value) => {
     setItineraries((prev) => {
       const copy = [...prev];
-      copy[idx] = { ...copy[idx], description: value };
+      copy[idx] = { ...copy[idx], description: value ?? "" };
       return copy;
     });
   };
 
+  // itinerary file change — revoke previous blob and set preview, clear existingImage
   const handleItineraryFileChange = (idx, file) => {
     setItineraries((prev) => {
       const copy = [...prev];
-      // revoke previous preview if blob
-      if (copy[idx].preview && copy[idx].preview.startsWith("blob:")) {
+      if (copy[idx]?.preview && copy[idx].preview.startsWith("blob:")) {
         URL.revokeObjectURL(copy[idx].preview);
       }
       const preview = file ? URL.createObjectURL(file) : "";
-      // if user selects a new file, we should clear existingImage (server will accept uploaded file)
-      copy[idx] = { ...copy[idx], file, preview, existingImage: copy[idx].existingImage ? "" : copy[idx].existingImage, removed: false };
+      copy[idx] = { ...copy[idx], file: file ?? null, preview, existingImage: "", removed: false };
       return copy;
     });
   };
 
   const addDay = () => {
-    setForm((p) => ({ ...p, days: Number(p.days || 0) + 1 }));
+    setForm((p) => {
+      const newDays = Number(p.days || 0) + 1;
+      return { ...p, days: newDays, nights: Math.max(0, newDays - 1) };
+    });
     setItineraries((p) => [
       ...p,
-      { id: makeId(), day_number: p.length + 1, description: "", file: null, preview: "", existingImage: "" },
+      { id: makeId(), day_number: p.length + 1, description: "", file: null, preview: "", existingImage: "", removed: false },
     ]);
   };
 
@@ -168,12 +200,11 @@ export default function UpdateDefaultPackageForm({ toEditDefault = null, onClose
         URL.revokeObjectURL(removed.preview);
       }
       const newArr = copy.map((it, i) => ({ ...it, day_number: i + 1 }));
-      setForm((p) => ({ ...p, days: newArr.length }));
+      setForm((p) => ({ ...p, days: newArr.length, nights: Math.max(0, newArr.length - 1) }));
       return newArr;
     });
   };
 
-  // remove existing image without adding a new file (marks existingImage "")
   const removeExistingImage = (idx) => {
     setItineraries((prev) => {
       const copy = [...prev];
@@ -186,50 +217,79 @@ export default function UpdateDefaultPackageForm({ toEditDefault = null, onClose
     });
   };
 
+  // Validate the form
   const validate = () => {
     const e = {};
-    if (!form.package_name?.trim()) e.package_name = "Package name is required";
-    if (!form.departure?.trim()) e.departure = "Departure is required";
-    const daysNum = Number(form.days) || 0;
-    if (!daysNum || daysNum < 1) e.days = "Days must be at least 1";
-    if (itineraries.length !== daysNum) {
+
+    // Package name & departure
+    if (!form.package_name?.trim()) {
+      e.package_name = "Package name is required";
+    }
+    if (!form.departure?.trim()) {
+      e.departure = "Departure is required";
+    }
+
+    // Nights validation
+    const nightsNum = Number(form.nights ?? 0);
+    if (!Number.isInteger(nightsNum) || nightsNum < 0) {
+      e.nights = "Nights must be a non-negative integer";
+    }
+
+    // Days validation
+    const daysNum = Number(form.days ?? 0);
+    if (!Number.isInteger(daysNum) || daysNum < 1) {
+      e.days = "Days must be at least 1";
+    }
+
+    // Days must equal nights + 1
+    if (Number.isInteger(nightsNum) && Number.isInteger(daysNum)) {
+      if (daysNum !== nightsNum + 1) {
+        e.days = "Days must be equal to nights + 1";
+      }
+    }
+
+    // Itineraries count must match days
+    if (Array.isArray(itineraries) && daysNum && itineraries.length !== daysNum) {
       e.itineraries = `Itineraries count (${itineraries.length}) must match days (${daysNum})`;
     }
+
+    // Itinerary details
     itineraries.forEach((it, idx) => {
-      if (!it.description?.trim()) e[`it_${idx}`] = `Description for day ${idx + 1} is required`;
-      // for update: allow an itinerary to keep existingImage OR provide new file. If neither => error.
+      if (!it.description?.trim()) {
+        e[`it_${idx}`] = `Description for day ${idx + 1} is required`;
+      }
       if (!it.file && !it.existingImage) {
         e[`file_${idx}`] = `Image for day ${idx + 1} is required`;
       }
     });
+
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
+
+  // submit
   const handleSubmit = async (ev) => {
     ev.preventDefault();
     if (!validate()) return;
 
     setSubmitting(true);
     try {
-      // Build itinerary metadata payload
       const itineraryPayload = itineraries.map((it) => ({
         day_number: it.day_number,
         description: it.description,
-        existingImage: it.existingImage || "", // empty if removed or replaced
-        removed: !!it.removed, // server can use this to delete existing file if true
+        existingImage: it.existingImage || "",
+        removed: !!it.removed,
       }));
 
-      // basic client-side limits
       if (itineraryPayload.length > 10) throw new Error("Maximum 10 itinerary days/images allowed");
       const filesCount = itineraries.filter((it) => it.file).length;
-      // require image per day either via existingImage or new file (validate ensured this)
       if (filesCount > 10) throw new Error("Too many files");
 
       const fd = new FormData();
-      fd.append("package_name", form.package_name);
-      fd.append("departure", form.departure);
-      if (form.nights !== "") fd.append("nights", String(form.nights));
+      fd.append("package_name", form.package_name ?? "");
+      fd.append("departure", form.departure ?? "");
+      fd.append("nights", String(form.nights ?? 0));
       fd.append("days", String(form.days ?? itineraryPayload.length));
       fd.append(
         "inclusions",
@@ -245,32 +305,27 @@ export default function UpdateDefaultPackageForm({ toEditDefault = null, onClose
         }
       });
 
-      // send to correct endpoint: update if toEditDefault has _id, otherwise create
       if (toEditDefault && toEditDefault._id) {
-        await axiosInstance.put(`/admin/packages/default-package/${toEditDefault._id}`, fd);
-      } 
+        await updateDefaultPackage(toEditDefault._id, fd);
+      }
 
       // cleanup previews
       itineraries.forEach((it) => {
         if (it.preview && it.preview.startsWith("blob:")) URL.revokeObjectURL(it.preview);
       });
 
-      // reset or call onUpdated
-      if (onUpdated) onUpdated();
-      // optionally close
-      if (onClose) onClose();
-
-      // reset local UI (optional)
       setForm(initialForm);
-      setItineraries([{ id: makeId(), day_number: 1, description: "", file: null, preview: "", existingImage: "" }]);
+      setItineraries([{ id: makeId(), day_number: 1, description: "", file: null, preview: "", existingImage: "", removed: false }]);
       setErrors({});
+      if (onCloseEditDefault) onCloseEditDefault();
     } catch (err) {
       console.error("Update default package failed:", err);
       const message = err?.response?.data?.message || err?.message || "Failed to update default package";
       alert(message);
     } finally {
-        setSubmitting(false);
-        onClose()
+      setSubmitting(false);
+      // keep idempotent close
+      if (onCloseEditDefault) onCloseEditDefault();
     }
   };
 
@@ -286,7 +341,7 @@ export default function UpdateDefaultPackageForm({ toEditDefault = null, onClose
                 itineraries.forEach((it) => {
                   if (it.preview && it.preview.startsWith("blob:")) URL.revokeObjectURL(it.preview);
                 });
-                if (onClose) onClose();
+                if (onCloseEditDefault) onCloseEditDefault();
               }}
               className="p-1"
               aria-label="Close"
@@ -300,7 +355,7 @@ export default function UpdateDefaultPackageForm({ toEditDefault = null, onClose
             <label className="block text-sm font-medium text-gray-700">Package Name</label>
             <input
               name="package_name"
-              value={form.package_name}
+              value={form.package_name ?? ""}
               onChange={handleFormChange}
               className="mt-2 w-full border rounded px-3 py-2"
               placeholder="Enter package name"
@@ -313,7 +368,7 @@ export default function UpdateDefaultPackageForm({ toEditDefault = null, onClose
             <label className="block text-sm font-medium text-gray-700">Departure</label>
             <input
               name="departure"
-              value={form.departure}
+              value={form.departure ?? ""}
               onChange={handleFormChange}
               className="mt-2 w-full border rounded px-3 py-2"
               placeholder="e.g., Every Friday"
@@ -327,7 +382,7 @@ export default function UpdateDefaultPackageForm({ toEditDefault = null, onClose
               <label className="block text-sm font-medium text-gray-700">Days</label>
               <input
                 name="days"
-                value={form.days}
+                value={form.days ?? 1}
                 onChange={handleDaysChange}
                 className="mt-2 w-full border rounded px-3 py-2"
                 inputMode="numeric"
@@ -338,11 +393,12 @@ export default function UpdateDefaultPackageForm({ toEditDefault = null, onClose
               <label className="block text-sm font-medium text-gray-700">Nights</label>
               <input
                 name="nights"
-                value={form.nights}
-                onChange={(e) => setForm((p) => ({ ...p, nights: e.target.value }))}
+                value={form.nights ?? 0}
+                onChange={handleNightsChange}
                 className="mt-2 w-full border rounded px-3 py-2"
                 inputMode="numeric"
               />
+              {errors.nights && <p className="text-xs text-red-500 mt-1">{errors.nights}</p>}
             </div>
           </div>
 
@@ -353,9 +409,9 @@ export default function UpdateDefaultPackageForm({ toEditDefault = null, onClose
               {form.inclusions.map((inc, idx) => (
                 <div key={idx} className="flex gap-2 items-center">
                   <input
-                    value={inc}
+                    value={inc ?? ""}
                     onChange={(e) => {
-                      const val = e.target.value;
+                      const val = e.target.value ?? "";
                       setForm((p) => {
                         const incs = [...p.inclusions];
                         incs[idx] = val;
@@ -405,8 +461,8 @@ export default function UpdateDefaultPackageForm({ toEditDefault = null, onClose
                   <label className="block mb-2">
                     <div className="text-sm text-gray-700 mb-1">Description</div>
                     <textarea
-                      value={it.description}
-                      onChange={(e) => handleItineraryDescChange(idx, e.target.value)}
+                      value={it.description ?? ""}
+                      onChange={(e) => handleItineraryDescChange(idx, e.target.value ?? "")}
                       placeholder={`Enter description for Day ${idx + 1}`}
                       className="w-full border rounded px-3 py-2"
                       rows={3}
@@ -425,7 +481,6 @@ export default function UpdateDefaultPackageForm({ toEditDefault = null, onClose
                     {errors[`file_${idx}`] && <p className="text-xs text-red-500 mt-1">{errors[`file_${idx}`]}</p>}
                   </label>
 
-                  {/* show preview if available */}
                   {it.preview ? (
                     <div className="mt-3 w-48 border rounded p-1 flex flex-col gap-2">
                       <img
@@ -459,7 +514,7 @@ export default function UpdateDefaultPackageForm({ toEditDefault = null, onClose
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <input
                 name="pricing.adult"
-                value={form.pricing.adult}
+                value={form.pricing.adult ?? ""}
                 onChange={handleFormChange}
                 className="border rounded px-3 py-2"
                 placeholder="Adult"
@@ -467,7 +522,7 @@ export default function UpdateDefaultPackageForm({ toEditDefault = null, onClose
               />
               <input
                 name="pricing.childWithBed"
-                value={form.pricing.childWithBed}
+                value={form.pricing.childWithBed ?? ""}
                 onChange={handleFormChange}
                 className="border rounded px-3 py-2"
                 placeholder="Child w/ bed"
@@ -475,7 +530,7 @@ export default function UpdateDefaultPackageForm({ toEditDefault = null, onClose
               />
               <input
                 name="pricing.childWithoutBed"
-                value={form.pricing.childWithoutBed}
+                value={form.pricing.childWithoutBed ?? ""}
                 onChange={handleFormChange}
                 className="border rounded px-3 py-2"
                 placeholder="Child w/o bed"
@@ -483,7 +538,7 @@ export default function UpdateDefaultPackageForm({ toEditDefault = null, onClose
               />
               <input
                 name="pricing.infant"
-                value={form.pricing.infant}
+                value={form.pricing.infant ?? ""}
                 onChange={handleFormChange}
                 className="border rounded px-3 py-2"
                 placeholder="Infant"
@@ -499,7 +554,7 @@ export default function UpdateDefaultPackageForm({ toEditDefault = null, onClose
                 itineraries.forEach((it) => {
                   if (it.preview && it.preview.startsWith("blob:")) URL.revokeObjectURL(it.preview);
                 });
-                if (onClose) onClose();
+                if (onCloseEditDefault) onCloseEditDefault();
               }}
               className="px-4 py-2 rounded bg-gray-200"
               disabled={submitting}

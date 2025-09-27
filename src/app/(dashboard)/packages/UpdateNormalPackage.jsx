@@ -3,19 +3,26 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import useAdminStore from "@/stores/useAdminStore";
 
-const UpdateNormalPackage = ({toEdit, editForm, setEditForm, editItineraries, setEditItineraries, editErrors, setEditErrors, closeEditModal}) => {
-  
-  const [editingSubmitting, setEditingSubmitting] = useState(false);
-  
-  const {updatePackage} = useAdminStore()
-  
+const UpdateNormalPackage = ({toEdit, editForm, setEditForm, editItineraries, setEditItineraries, editErrors, setEditErrors, onCloseEditNormal, updatePackage}) => {
   
 
+  
+  //For substitute of package preview images if not available
+  const PLACEHOLDER_SVG = `data:image/svg+xml;utf8,${encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="160" height="100"><rect width="100%" height="100%" fill="#f3f4f6"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#9ca3af">No Image</text></svg>`
+  )}`;
+
+  const [editingSubmitting, setEditingSubmitting] = useState(false);
+
+  
+  
+  //handling form change
   const handleEditFormChange = (e) => {
     const { name, value } = e.target;
     setEditForm((p) => ({ ...p, [name]: value }));
   };
 
+  //handling itinerary description change
   const handleEditItineraryDescChange = (index, value) => {
     setEditItineraries((prev) => {
       const copy = [...prev];
@@ -24,7 +31,7 @@ const UpdateNormalPackage = ({toEdit, editForm, setEditForm, editItineraries, se
     });
   };
 
-  
+  //handle itinerary file change
   const handleEditItineraryFileChange = (index, file) => {
     setEditItineraries((prev) => {
       const copy = [...prev];
@@ -57,21 +64,82 @@ const UpdateNormalPackage = ({toEdit, editForm, setEditForm, editItineraries, se
     });
   };
 
+  // validating the form
   const validateEdit = () => {
     const e = {};
-    if (!editForm.package_name.trim()) e.package_name = "Package name required";
-    if (!editForm.place.trim()) e.place = "Place required";
+
+    // ---------------------------
+    // Package name & place
+    // ---------------------------
+    if (!editForm.package_name.trim()) {
+      e.package_name = "Package name required";
+    }
+
+    // place is optional in backend (defaults to "Hyderabad")
+    // ⚠️ If you want frontend to enforce required, keep this line
+    if (!editForm.place.trim()) {
+      e.place = "Place required";
+    }
+
+    // ---------------------------
+    // Nights validation
+    // ---------------------------
+    const nights = Number(editForm.nights);
+    if (!Number.isInteger(nights) || nights < 0) {
+      e.nights = "Nights must be a non-negative integer"; // backend allows 0
+    }
+
+    // ---------------------------
+    // Days validation
+    // ---------------------------
     const days = Number(editForm.days);
-    if (!Number.isInteger(days) || days <= 0) e.days = "Days must be a positive integer";
-    if (!editForm.price || Number.isNaN(Number(editForm.price))) e.price = "Price required";
+    if (!Number.isInteger(days) || days <= 0) {
+      e.days = "Days must be a positive integer";
+    }
+
+    // Days must equal nights + 1
+    if (
+      Number.isInteger(nights) &&
+      nights >= 0 &&   // allow 0 since backend allows it
+      Number.isInteger(days) &&
+      days > 0 &&
+      days !== nights + 1
+    ) {
+      e.days = "Days should always be Nights + 1";
+    }
+
+    // ---------------------------
+    // Price validation
+    // ---------------------------
+    if (editForm.price === "" || Number.isNaN(Number(editForm.price))) {
+    e.price = "Price required";
+    } else if (Number(editForm.price) < 0) {
+      e.price = "Price cannot be negative";
+    }
+
+    // ---------------------------
+    // Itinerary validation
+    // ---------------------------
+    // Backend does NOT enforce itineraries,
+    // but frontend stricter rule is fine if you want each itinerary to have desc + img
     editItineraries.forEach((it, idx) => {
-      if (!it.description.trim()) e[`it_${idx}`] = `Description for Day ${idx + 1} required`;
-      if (!it.file && !it.existingImage) e[`file_${idx}`] = `Image for Day ${idx + 1} required`;
+      if (!it.description.trim()) {
+        e[`it_${idx}`] = `Description for Day ${idx + 1} required`;
+      }
+      if (!it.file && !it.existingImage) {
+        e[`file_${idx}`] = `Image for Day ${idx + 1} required`;
+      }
     });
+
+    // ---------------------------
+    // Finalize
+    // ---------------------------
     setEditErrors(e);
     return Object.keys(e).length === 0;
   };
 
+
+  //handle sumbit form
   const submitEdit = async (e) => {
     e.preventDefault();
     if (!toEdit?._id) return;
@@ -112,7 +180,7 @@ const UpdateNormalPackage = ({toEdit, editForm, setEditForm, editItineraries, se
       editItineraries.forEach((it) => {
         if (it.preview && it.preview.startsWith("blob:")) URL.revokeObjectURL(it.preview);
       });
-      closeEditModal();
+      onCloseEditNormal();
     } catch (err) {
       console.error("Failed to update package:", err);
       alert(err?.response?.data?.message || "Failed to update package");
@@ -131,7 +199,7 @@ const UpdateNormalPackage = ({toEdit, editForm, setEditForm, editItineraries, se
                 <h3 className="text-2xl font-semibold">Edit Package</h3>
                 <button
                     type="button"
-                    onClick={() => closeEditModal()}
+                    onClick={() => onCloseEditNormal()}
                     className="p-1"
                     aria-label="Close"
                 >
@@ -226,7 +294,7 @@ const UpdateNormalPackage = ({toEdit, editForm, setEditForm, editItineraries, se
 
                 {/* Footer actions */}
                 <div className="flex gap-3 justify-end p-4 border-t">
-                <button type="button" onClick={() => closeEditModal()} className="px-4 py-2 rounded bg-gray-200" disabled={editingSubmitting}>
+                <button type="button" onClick={() => onCloseEditNormal()} className="px-4 py-2 rounded bg-gray-200" disabled={editingSubmitting}>
                     Cancel
                 </button>
                 <button type="submit" className="px-4 py-2 rounded bg-blue-600 text-white" disabled={editingSubmitting}>

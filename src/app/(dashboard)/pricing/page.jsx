@@ -72,9 +72,10 @@ export default function PricingPage() {
   const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
+    
     if (pricesToUpdate) {
       setFormData({
-        package_id: pricesToUpdate.package_id ?? "",
+        package_id: pricesToUpdate.package_id?._id ?? "",
         entryAdult: String(pricesToUpdate.entryAdult ?? ""),
         entryChild: String(pricesToUpdate.entryChild ?? ""),
         snowAdult: String(pricesToUpdate.snowAdult ?? ""),
@@ -209,77 +210,8 @@ export default function PricingPage() {
     return pkg ? pkg.package_name : "-";
   };
 
-  // Sample pricing data based on the screenshot
-  const pricingData = [
-    {
-      id: 1,
-      package: "1NIGHT 2DAY",
-      duration: "1 Night / 2 Days",
-      entryAdult: 300,
-      entryChild: 200,
-      snowAdult: 400,
-      snowChild: 100,
-      breakfast: 100,
-      lunchVeg: 150,
-      lunchNonVeg: 200,
-      guide: 1000,
-      createdAt: "2025-08-22",
-      status: "active",
-      totalBookings: 45,
-      revenue: 125000,
-      category: "weekend",
-    },
-    {
-      id: 2,
-      package: "2 NIGHT 3 DAY",
-      duration: "2 Nights / 3 Days",
-      entryAdult: 100,
-      entryChild: 50,
-      snowAdult: 200,
-      snowChild: 100,
-      breakfast: 80,
-      lunchVeg: 150,
-      lunchNonVeg: 200,
-      guide: 2000,
-      createdAt: "2025-08-21",
-      status: "active",
-      totalBookings: 78,
-      revenue: 234000,
-      category: "extended",
-    },
+  
 
-  ]
-
-  const stats = [
-    {
-      title: "Total Packages",
-      value: "4",
-      change: "+2 this month",
-      icon: Package,
-      color: "text-blue-600",
-    },
-    {
-      title: "Average Revenue",
-      value: "₹176K",
-      change: "+12% from last month",
-      icon: DollarSign,
-      color: "text-green-600",
-    },
-    {
-      title: "Total Bookings",
-      value: "173",
-      change: "+8% this week",
-      icon: Users,
-      color: "text-purple-600",
-    },
-    {
-      title: "Active Packages",
-      value: "3",
-      change: "75% active rate",
-      icon: TrendingUp,
-      color: "text-cyan-600",
-    },
-  ]
 
   // const filteredPricing = pricingData.filter((item) => {
   //   const matchesSearch = item.package.toLowerCase().includes(searchTerm.toLowerCase())
@@ -290,7 +222,7 @@ export default function PricingPage() {
   // const categories = ["all", "weekend", "extended", "luxury", "premium"]
 
   return (
-    <div className="min-h-screen bg-gray-50 lg:p-6 lg:mt-0 mt-10">
+    <div className="min-h-screen bg-white lg:p-6 lg:mt-0 mt-10 m-2">
       <Header />
       <div className=" mx-auto space-y-6">
         {/* Header */}

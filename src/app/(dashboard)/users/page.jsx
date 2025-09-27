@@ -12,7 +12,7 @@ export default function UsersPage() {
   const [editedUser, setEditedUser] = useState(null);
   const [deletedUser, setDeletedUser] = useState(null);
   const [createdUser, setCreatedUser] = useState(false);
-  const [formData, setFormData] = useState({ email: "", role: "" });
+  const [formData, setFormData] = useState({ email: "", role: "Admin" });
   const [form, setForm] = useState({ email: "", password: "", role: "Admin" })
   const [submitting, setSubmitting] = useState(false)
 
@@ -24,7 +24,7 @@ export default function UsersPage() {
 
   const closeModal = () => {
     setEditedUser(null);
-    setFormData({ email: "", role: "" });
+    setFormData({ email: "", role: "Admin" });
   };
 
   const handleSubmit = async (e) => {
@@ -49,7 +49,7 @@ export default function UsersPage() {
 
   const closeCreateModel = () => {
     setCreatedUser(false);
-    setForm({ email: "", password: "", role: "" });
+    setForm({ email: "", password: "", role: "Admin" });
   };
 
   const handleFormSubmit = async (e) => {
@@ -91,12 +91,12 @@ export default function UsersPage() {
   }
 
   return (
-  <div className="min-h-screen bg-background flex mt-14 lg:mt-0">
-    <main className="flex-1 flex flex-col">
+  <div className="min-h-screen bg-background flex mt-14 lg:mt-0 m-2">
+    <main className="flex-1 flex flex-col bg-gray-50">
       <Header />
-      <div className="lg:p-6 space-y-6 bg-gray-50">
+      <div className="lg:p-6 space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-8 ">
             <div>
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">Users Management</h1>
                 <p className="text-gray-600">Manage customers, agents, and administrators</p>
@@ -202,7 +202,7 @@ export default function UsersPage() {
               <input
                 type="email"
                 name="email"
-                value={formData.email}
+                value={formData.email || ""}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring focus:border-blue-300"
                 required

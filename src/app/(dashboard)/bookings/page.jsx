@@ -1,5 +1,6 @@
 "use client"
 
+
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { EyeIcon } from "lucide-react"
 import useAdminStore from "@/stores/useAdminStore"
@@ -14,6 +15,63 @@ import Sidebar from "@/app/components/admin/Sidebar"
 import { CalendarDays, Clock, CheckCircle, DollarSign } from "lucide-react";
 import Header from "@/app/components/admin/Hearder"
 import DefaultPackageBookingEditFromSelected from "./DefaultPackageBookingEditFromSelected"
+
+
+// ---------- helpers ----------
+const formatDateDisplay = (value) => {
+  // Returns "11 Sep 2025" or "—" if invalid / missing
+  if (value === undefined || value === null || value === "") return "—";
+  try {
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return "—";
+    return d.toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  } catch (err) {
+    return "—";
+  }
+};
+
+const formatTimeDisplay = (value) => {
+  // Accepts:
+  // - full ISO datetime string
+  // - time-only strings "HH:MM" or "HH:MM:SS"
+  // Returns "02:30 PM" or "—" when invalid
+  if (value === undefined || value === null || value === "") return "—";
+  const s = String(value).trim();
+  // If looks like time-only "9:30", "09:30:00"
+  const timeOnlyMatch = s.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  try {
+    if (timeOnlyMatch) {
+      const hh = Number(timeOnlyMatch[1]);
+      const mm = Number(timeOnlyMatch[2]);
+      if (hh >= 0 && hh <= 23 && mm >= 0 && mm <= 59) {
+        const tmp = new Date();
+        tmp.setHours(hh, mm, 0, 0);
+        return tmp.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: true });
+      }
+      return "—";
+    }
+    // Otherwise try parse as date/time
+    const d = new Date(s);
+    if (Number.isNaN(d.getTime())) return "—";
+    return d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: true });
+  } catch (err) {
+    return "—";
+  }
+};
+
+const formatDateTimeDisplay = (dateValue, timeValue) => {
+  // If both are present, show "11 Sep 2025, 02:30 PM"
+  const dateStr = formatDateDisplay(dateValue);
+  const timeStr = formatTimeDisplay(timeValue);
+  if (dateStr === "—" && timeStr === "—") return "—";
+  if (dateStr === "—") return timeStr;
+  if (timeStr === "—") return dateStr;
+  return `${dateStr}, ${timeStr}`;
+};
 
 
 export default function BookingsPage() {
@@ -48,7 +106,7 @@ export default function BookingsPage() {
   
     
   
-
+console.log(bookingStats.cancelledBookings)
 const stats = [
   {
     title: "Total Bookings",
@@ -122,6 +180,15 @@ const stats = [
     }
   }, [editedBooking])
 
+
+  useEffect(() => {
+      if (page === 1) {
+      getBookings({ stateFilter, searchTerm, page, limit });
+       
+      } else {
+        setPage(1);
+      } 
+    }, [stateFilter, searchTerm]);
   // fetch bookings on mount
   useEffect(() => {
     if (typeof getBookings === "function") {
@@ -714,8 +781,9 @@ const stats = [
           </div>
         </div>
         )}
-        {(selectedBooking && selectedBooking.source === "defaultPackageBooking" ) && console.log(selectedBooking.source)}
-      {(selectedBooking && selectedBooking.source === "defaultPackageBooking" ) && (
+        
+      
+      {(selectedBooking && selectedBooking?.source === "defaultPackageBooking") && (
         <div className="fixed inset-0 z-50 bg-white/30 backdrop-blur-sm flex items-center justify-center px-4">
           <div className="bg-white w-full max-w-2xl rounded-lg shadow-xl relative overflow-y-auto max-h-[90vh] border border-gray-200">
             <Card>
@@ -728,6 +796,7 @@ const stats = [
                 <button
                   onClick={() => setSelectedBooking(null)}
                   className="p-1 rounded hover:bg-gray-100"
+                  aria-label="Close booking details"
                 >
                   <X size={20} className="text-gray-600 hover:text-red-500" />
                 </button>
@@ -752,19 +821,38 @@ const stats = [
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <p><strong>Booking ID:</strong> {selectedBooking?._id ?? "—"}</p>
                     <p><strong>Package:</strong> {selectedBooking?.package_name ?? "—"}</p>
+
                     <div>
-                      <p><strong>Pickup:</strong> {selectedBooking?.dates?.outbound?.pickup_date ? String(selectedBooking.dates.outbound.pickup_date).slice(0,10) : "—"} </p>
-                      <p><strong>Flight details:</strong> {selectedBooking?.dates?.outbound?.flight ?? "—"} </p>
-                      <p><strong>Departure:</strong> {selectedBooking?.dates?.outbound?.departureTime ?? "—"} </p>
-                      <p><strong>Arrival:</strong> {selectedBooking?.dates?.outbound?.arrivalTime ?? "—"} </p>  
+                      <p>
+                        <strong>Pickup:</strong>{" "}
+                        {formatDateDisplay(selectedBooking?.dates?.outbound?.pickup_date)}
+                      </p>
+                      <p><strong>Flight details:</strong> {selectedBooking?.dates?.outbound?.flight ?? "—"}</p>
+                      <p>
+                        <strong>Departure:</strong>{" "}
+                        {formatTimeDisplay(selectedBooking?.dates?.outbound?.departureTime)}
+                      </p>
+                      <p>
+                        <strong>Arrival:</strong>{" "}
+                        {formatTimeDisplay(selectedBooking?.dates?.outbound?.arrivalTime)}
+                      </p>
                     </div>
+
                     <div>
-                      <p><strong>Drop:</strong> {selectedBooking?.dates?.return?.drop_date ? String(selectedBooking.dates.return.drop_date).slice(0,10) : "—"} </p>
-                      <p><strong>Flight details:</strong> {selectedBooking?.dates?.return?.flight ?? "—"} </p>
-                      <p><strong>Departure:</strong> {selectedBooking?.dates?.return?.departureTime ?? "—"} </p>
-                      <p><strong>Arrival:</strong> {selectedBooking?.dates?.return?.arrivalTime ?? "—"} </p>
+                      <p>
+                        <strong>Drop:</strong>{" "}
+                        {formatDateDisplay(selectedBooking?.dates?.return?.drop_date)}
+                      </p>
+                      <p><strong>Flight details:</strong> {selectedBooking?.dates?.return?.flight ?? "—"}</p>
+                      <p>
+                        <strong>Departure:</strong>{" "}
+                        {formatTimeDisplay(selectedBooking?.dates?.return?.departureTime)}
+                      </p>
+                      <p>
+                        <strong>Arrival:</strong>{" "}
+                        {formatTimeDisplay(selectedBooking?.dates?.return?.arrivalTime)}
+                      </p>
                     </div>
-                    
                   </div>
                 </div>
 
@@ -779,28 +867,16 @@ const stats = [
                   </div>
                 </div>
 
-        
-
-                  <div className="border rounded-lg p-4">
-                    <h3 className="font-semibold mb-2">Payment Details</h3>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <p><strong>Base Total:</strong> {fmt(selectedBooking?.pricing?.base_total)}</p>
-                      <p><strong>Agent Commission:</strong> {fmt(selectedBooking?.pricing?.agent_commission)}</p>
-                      <p className="text-lg font-bold"><strong>Total Amount:</strong> {fmt(selectedBooking?.pricing?.total_amount)}</p>
-                    </div>
+                <div className="border rounded-lg p-4">
+                  <h3 className="font-semibold mb-2">Payment Details</h3>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <p><strong>Base Total:</strong> {fmt(selectedBooking?.pricing?.base_total)}</p>
+                    <p><strong>Agent Commission:</strong> {fmt(selectedBooking?.pricing?.agent_commission)}</p>
+                    <p className="text-lg font-bold"><strong>Total Amount:</strong> {fmt(selectedBooking?.pricing?.total_amount)}</p>
                   </div>
+                </div>
 
-              
-
-                {/* Raw JSON */}
-                {/* <div className="border rounded-lg p-4">
-                  <h3 className="font-semibold mb-2">All booking fields (raw)</h3>
-                  <pre className="bg-gray-100 p-2 rounded text-xs overflow-auto max-h-48">
-                    {JSON.stringify(selectedBooking, null, 2)}
-                  </pre>
-                </div> */}
-
-                {/* Footer with Cancel */}
+                {/* Footer with actions */}
                 <div className="flex justify-between pt-4 border-t">
                   <button
                     onClick={handleBookingConfirm}
@@ -808,22 +884,25 @@ const stats = [
                   >
                     Confirm Booking
                   </button>
-                   <button
-                    onClick={handleBookingCancel}
-                    className="bg-blue-600 text-white px-5 py-2.5 rounded hover:bg-blue-700 text-sm font-semibold"
-                  >
-                    Cancel Booking
-                  </button>
-                  <button
-                    onClick={() => setSelectedBooking(null)}
-                    className="bg-red-600 text-white px-5 py-2.5 rounded hover:bg-red-700 text-sm font-semibold"
-                  >
-                    Cancel
-                  </button>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleBookingCancel}
+                      className="bg-yellow-600 text-white px-5 py-2.5 rounded hover:bg-yellow-700 text-sm font-semibold"
+                    >
+                      Cancel Booking
+                    </button>
+
+                    <button
+                      onClick={() => setSelectedBooking(null)}
+                      className="bg-red-600 text-white px-5 py-2.5 rounded hover:bg-red-700 text-sm font-semibold"
+                    >
+                      Close
+                    </button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
-
           </div>
         </div>
       )}
@@ -1031,86 +1110,6 @@ const stats = [
         
 
         {(editedBooking && editedBooking.source === "defaultPackageBooking") && (
-        // <div className="fixed inset-0 z-50 bg-white/30 backdrop-blur-sm flex items-center justify-center px-4">
-        //   <div className="bg-white w-full max-w-3xl rounded-lg shadow-xl relative overflow-y-auto max-h-[90vh] border border-gray-200">
-        //     <div className="flex justify-between items-center px-6 py-5 bg-gray-100">
-        //       <h3 className="text-2xl font-semibold text-gray-800">Edit Booking</h3>
-        //       <button onClick={closeModal}>
-        //         <X size={24} className="text-gray-600 hover:text-red-500" />
-        //       </button>
-        //     </div>
-
-        //     <form onSubmit={handleSubmit} className="p-6 space-y-6 text-base text-gray-700">
-        //       {/* Customer Info */}
-        //       <div>
-        //         <h4 className="font-semibold text-gray-900 mb-3 text-lg">Customer Information</h4>
-        //         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        //           <input type="email" name="email" value={formData.email} placeholder="Email" className="border rounded-lg px-3 py-2 w-full" disabled />
-        //           <input type="text" name="mobile_number" value={formData.mobile_number} placeholder="Mobile Number" className="border rounded-lg px-3 py-2 w-full" disabled />
-        //         </div>
-        //       </div>
-
-        //       {/* Booking Info */}
-        //       <div>
-        //         <h4 className="font-semibold text-gray-900 mb-3 text-lg">Booking Information</h4>
-        //         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        //           <label htmlFor="package_name">
-        //             Package <input type="text" id="package_name" value={formData.package_name} placeholder="Package Name" className="border rounded-lg px-3 py-2 w-full" disabled/>
-        //           </label>
-                 
-        //           <label>
-        //             pickup date<input type="date" name="pickup_date" value={formData.pickup_date} onChange={handleChange} className="border rounded-lg px-3 py-2 w-full" />
-        //           </label>
-        //           <label>
-        //             pickup time<input type="time" name="pickup_time" value={formData.pickup_time} onChange={handleChange} className="border rounded-lg px-3 py-2 w-full" />
-        //           </label>
-        //           <label>
-        //             drop date<input type="date" name="drop_date" value={formData.drop_date} onChange={handleChange} className="border rounded-lg px-3 py-2 w-full" />
-        //           </label>
-        //           <label>
-        //             drop time<input type="time" name="drop_time" value={formData.drop_time} onChange={handleChange} className="border rounded-lg px-3 py-2 w-full" />
-        //           </label>
-        //           <label>
-        //             pickup location<input type="text" name="pickup_location" value={formData.pickup_location} onChange={handleChange} className="border rounded-lg px-3 py-2 w-full" />
-        //           </label>
-        //           <label>
-        //             drop location<input type="text" name="drop_location" value={formData.drop_location} onChange={handleChange} className="border rounded-lg px-3 py-2 w-full" />
-        //           </label>
-
-                  
-                  
-                  
-        //         </div>
-        //       </div>
-
-        //       {/* Guests */}
-        //       <div>
-        //         <h4 className="font-semibold text-gray-900 mb-3 text-lg">Guests</h4>
-        //         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        //           <input type="number" name="adults_total" value={formData.adults_total} onChange={handleChange} placeholder="Adults" className="border rounded-lg px-3 py-2 w-full" min="0" />
-        //           <input type="number" name="children" value={formData.children} onChange={handleChange} placeholder="Children" className="border rounded-lg px-3 py-2 w-full" min="0" />
-        //           <input type="number" name="infants" value={formData.infants} onChange={handleChange} placeholder="Infants" className="border rounded-lg px-3 py-2 w-full" min="0" />
-        //         </div>
-        //       </div>
-
-
-        //       {/* Payment */}
-        //       <div>
-        //         <h4 className="font-semibold text-gray-900 mb-3 text-lg">Payment</h4>
-        //         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        //           <label>Base Total<input type="text" name="base_total" value={formData.base_total} onChange={handleChange} placeholder="Base Total" className="border rounded-lg px-3 py-2 w-full" /></label>
-        //           <label>Agent Commission<input type="text" name="agent_commission" value={formData.agent_commission} onChange={handleChange} placeholder="Agent Commission" className="border rounded-lg px-3 py-2 w-full" /></label>
-        //           <label>Total Amount<input type="text" name="total_amount" value={formData.total_amount} onChange={handleChange} placeholder="Total Amount" className="border rounded-lg px-3 py-2 w-full" /></label>
-        //         </div>
-        //       </div>
-
-        //       <div className="flex justify-end gap-4 border-t pt-5">
-        //         <button type="button" onClick={closeModal} className="bg-gray-300 text-gray-800 px-5 py-2.5 rounded hover:bg-gray-400 text-lg font-semibold">Cancel</button>
-        //         <button type="submit" className="bg-green-600 text-white px-5 py-2.5 rounded hover:bg-green-700 text-lg font-semibold">Save Changes</button>
-        //       </div>
-        //     </form>
-        //   </div>
-          // </div>
           <DefaultPackageBookingEditFromSelected editedBooking={editedBooking} setEditedBooking={setEditedBooking} />
         )}
         
