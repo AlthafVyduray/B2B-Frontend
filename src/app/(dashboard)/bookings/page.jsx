@@ -425,10 +425,10 @@ const stats = [
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <p className="text-sm font-medium text-gray-600">{stat?.title}</p>
-                                            <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
+                                            <p className="text-2xl font-bold text-gray-900 mt-1">{stat?.value}</p>
                                         </div>
-                                        <div className={`p-3 rounded-full ${stat.color}`}>
-                                            {stat.icon}
+                                        <div className={`p-3 rounded-full ${stat?.color}`}>
+                                            {stat?.icon}
                                         </div>
                                     </div>
                                 </CardContent>
@@ -481,7 +481,7 @@ const stats = [
                     <div className="grid gap-6">
                         {bookings.map((booking) => (
                             <Card
-                                key={booking._id}
+                                key={booking?._id}
                                 className="border-0 shadow-lg bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all duration-300"
                             >
                                 <CardContent className="p-6">

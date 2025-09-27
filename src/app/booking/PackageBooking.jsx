@@ -305,7 +305,7 @@ const PackageBooking = ({ selectedPackage, setSelectedPackage, defaultPackage, s
 
             <div className="flex items-center justify-between p-3 border rounded-lg">
                 <span className="capitalize font-medium">
-                Children (4-12)
+                Children (2-11)
                 </span>
                 <div className="flex items-center gap-3">
                 <Button
@@ -327,7 +327,7 @@ const PackageBooking = ({ selectedPackage, setSelectedPackage, defaultPackage, s
 
             <div className="flex items-center justify-between p-3 border rounded-lg">
                 <span className="capitalize font-medium">
-                Infants (0-3)
+                Infants (0-23 months)
                 </span>
                 <div className="flex items-center gap-3">
                 <Button
@@ -417,7 +417,7 @@ const PackageBooking = ({ selectedPackage, setSelectedPackage, defaultPackage, s
                 
                 <div className="flex items-center justify-between p-3 border rounded-lg">
                 <span className="capitalize font-medium">
-                    Children With Bed (6-12)
+                    Children With Bed (6-11)
                 </span>
                 <div className="flex items-center gap-3">
                     <Button
@@ -462,7 +462,7 @@ const PackageBooking = ({ selectedPackage, setSelectedPackage, defaultPackage, s
 
                 <div className="flex items-center justify-between p-3 border rounded-lg">
                 <span className="capitalize font-medium">
-                    Infants (0-3)
+                    Infants (0-23 months)
                 </span>
                 <div className="flex items-center gap-3">
                     <Button
