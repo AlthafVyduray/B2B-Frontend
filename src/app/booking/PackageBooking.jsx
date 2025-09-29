@@ -75,277 +75,278 @@ const PackageBooking = ({ selectedPackage, setSelectedPackage, defaultPackage, s
   
     
   return (
-    <Card>
+    <Card className="max-h-[800px]">
         <CardHeader>
             <CardTitle>Travel Details</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 flex flex-col">
 
             <div className="space-y-2 w-full">
-            <Label htmlFor="package">Select Package</Label>
-            {console.log(defaultPackage)}
-            <Select
-                value={defaultPackage ? defaultPackageForm.package_id : form.package_id}
-                onValueChange={(value) => {
-                const pkg = allPackages.find((p) => p._id === value);
-                setSelectedPackage(pkg || null);
+                <Label htmlFor="package">Select Package</Label>
 
-                if (pkg?.__group === "default") {
-                    setDefaultPackage(true);
-                    setDefaultPackageForm((prev) => ({
-                    ...prev,
-                    package_name: pkg?.package_name ?? "",
-                    package_id: pkg?._id ?? "",
-                    }));
-                } else {
-                    setDefaultPackage(false);
-                    setForm((prev) => ({
-                    ...prev,
-                    package_name: pkg?.package_name ?? "",
-                    package_id: pkg?._id ?? "",
-                    }));
-                }
-                }}
-            >
+                <Select
+                    value={defaultPackage ? defaultPackageForm.package_id : form.package_id}
+                    onValueChange={(value) => {
+                    const pkg = allPackages.find((p) => p._id === value);
+                    setSelectedPackage(pkg || null);
+                    if (pkg?.__group === "default") {
+                        setDefaultPackage(true);
+                        setDefaultPackageForm((prev) => ({
+                        ...prev,
+                        package_name: pkg?.package_name ?? "",
+                        package_id: pkg?._id ?? "",
+                        }));
+                    } else {
+                        setDefaultPackage(false);
+                        setForm((prev) => ({
+                        ...prev,
+                        package_name: pkg?.package_name ?? "",
+                        package_id: pkg?._id ?? "",
+                        }));
+                    }
+                    }}
+                >
 
 
-            <SelectTrigger className="w-full">
-                {defaultPackage ? <SelectValue /> : <SelectValue placeholder="Select Package" />}
-            </SelectTrigger>
+                <SelectTrigger className="w-full">
+                    {defaultPackage ? <SelectValue /> : <SelectValue placeholder="Select Package" />}
+                </SelectTrigger>
 
-            <SelectContent>
-                {/* Optional group header for default packages */}
-                {defaultPackages?.length > 0 && (
-                <div className="px-2 py-1 text-xs font-medium text-gray-500">Default Packages</div>
+                <SelectContent>
+                    {/* Optional group header for default packages */}
+                    {defaultPackages?.length > 0 && (
+                    <div className="px-2 py-1 text-xs font-medium text-gray-500">Default Packages</div>
+                    )}
+                    {defaultPackages?.map((pkg) => (
+                    <SelectItem key={`default-${pkg._id}`} value={pkg._id}>
+                        {pkg.package_name}
+                    </SelectItem>
+                    ))}
+
+                    {/* Optional divider */}
+                    {defaultPackages?.length > 0 && packages?.length > 0 && (
+                    <div className="my-1 border-t" />
+                    )}
+
+                    {/* Regular packages */}
+                    {packages?.length > 0 && (
+                    <div className="px-2 py-1 text-xs font-medium text-gray-500">Other Packages</div>
+                    )}
+                    {packages?.map((pkg) => (
+                    // key prefixed to avoid accidental duplicate key collisions
+                    <SelectItem key={`pkg-${pkg._id}`} value={pkg._id}>
+                        {pkg.package_name}
+                    </SelectItem>
+                    ))}
+                </SelectContent>
+                </Select>
+                {errors.package && (
+                    <div className="text-xs text-red-600 mt-1">{errors.package}</div>
                 )}
-                {defaultPackages?.map((pkg) => (
-                <SelectItem key={`default-${pkg._id}`} value={pkg._id}>
-                    {pkg.package_name}
-                </SelectItem>
-                ))}
-
-                {/* Optional divider */}
-                {defaultPackages?.length > 0 && packages?.length > 0 && (
-                <div className="my-1 border-t" />
-                )}
-
-                {/* Regular packages */}
-                {packages?.length > 0 && (
-                <div className="px-2 py-1 text-xs font-medium text-gray-500">Other Packages</div>
-                )}
-                {packages?.map((pkg) => (
-                // key prefixed to avoid accidental duplicate key collisions
-                <SelectItem key={`pkg-${pkg._id}`} value={pkg._id}>
-                    {pkg.package_name}
-                </SelectItem>
-                ))}
-            </SelectContent>
-            </Select>
-            {errors.package && (
-                <div className="text-xs text-red-600 mt-1">{errors.package}</div>
-            )}
             </div>
 
             {! defaultPackage ? (
             <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-            <div>
-                <div className="space-y-2">
-                <Label htmlFor="pickup_location">Pickup Spot</Label>
-                <Select
-                    id="pickup_location" placeholder="Select Pickup Spot" name="pickup_location"
-                    value={form.pickup_location}
-                    onValueChange={(value) => {
-                    changeField("pickup_location", value)
-                    }}
-                >
-                    <SelectTrigger className="w-full">
-                    <SelectValue/>
-                    </SelectTrigger>
-                    <SelectContent>
-                    <SelectItem value="Airport">Airport</SelectItem>
-                    <SelectItem value="Railway Station">Railway Station</SelectItem>
-                    <SelectItem value="Bus Stop">Bus Stop</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                </Select>
-                {errors.pickup_location && (
-                    <div className="text-xs text-red-600 mt-1">{errors.pickup_location}</div>
-                )}
-                {form.pickup_location === "Other" && (
+                <div>
                     <div className="space-y-2">
-                    <div>
-                        <Input type="text" id="pickup_location_other" name="pickup_location_other" value={form.pickup_location_other}
-                        onChange={(e) => changeField("pickup_location_other", e.target.value)} />
-                    </div>
-                    {errors.pickup_location_other && (
-                        <div className="text-xs text-red-600 mt-1">{errors.pickup_location_other}</div>
+                    <Label htmlFor="pickup_location">Pickup Spot</Label>
+                    <Select
+                        id="pickup_location" placeholder="Select Pickup Spot" name="pickup_location"
+                        value={form.pickup_location}
+                        onValueChange={(value) => {
+                        changeField("pickup_location", value)
+                        }}
+                    >
+                        <SelectTrigger className="w-full">
+                        <SelectValue/>
+                        </SelectTrigger>
+                        <SelectContent>
+                        <SelectItem value="Airport">Airport</SelectItem>
+                        <SelectItem value="Railway Station">Railway Station</SelectItem>
+                        <SelectItem value="Bus Stop">Bus Stop</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    {errors.pickup_location && (
+                        <div className="text-xs text-red-600 mt-1">{errors.pickup_location}</div>
+                    )}
+                    {form.pickup_location === "Other" && (
+                        <div className="space-y-2">
+                        <div>
+                            <Input type="text" id="pickup_location_other" name="pickup_location_other" value={form.pickup_location_other}
+                            onChange={(e) => changeField("pickup_location_other", e.target.value)} />
+                        </div>
+                        {errors.pickup_location_other && (
+                            <div className="text-xs text-red-600 mt-1">{errors.pickup_location_other}</div>
+                        )}
+                        </div>
                     )}
                     </div>
-                )}
                 </div>
-            </div>
-            
-            <div>
                 <div className="space-y-2">
-                <Label htmlFor="drop_location">Drop Location</Label>
-                <Select
-                    id="drop_location" placeholder="Select Drop Location" name="drop_location"
-                    value={form.drop_location}
-                    onValueChange={(value) => {
-                    changeField("drop_location", value)
-                    }}
-                >
-                    <SelectTrigger className="w-full">
-                    <SelectValue/>
-                    </SelectTrigger>
-                    <SelectContent>
-                    <SelectItem value="Airport">Airport</SelectItem>
-                    <SelectItem value="Railway Station">Railway Station</SelectItem>
-                    <SelectItem value="Bus Stop">Bus Stop</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                </Select>
-                {errors.drop_location && (
-                    <div className="text-xs text-red-600 mt-1">{errors.drop_location}</div>
-                )}
-                {form.drop_location === "Other" && (
-                    <div className="space-y-2">
-                    <div>
-                        <Input type="text" id="drop_location_other" name="drop_location_other" value={form.drop_location_other}
-                        onChange={(e) => changeField("drop_location_other", e.target.value)} />
+                    <Label htmlFor="pickup_date">Pick Up Date</Label>
+                    <div className="relative">
+                    <Input type="date" id="pickup_date" name="pickup_date" min={todayISO} value={form.pickup_date}
+                        onChange={(e) => changeField("pickup_date", e.target.value)} />
+                    <CalendarIcon className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
                     </div>
-                    {errors.pickup_location_other && (
-                        <div className="text-xs text-red-600 mt-1">{errors.drop_location_other}</div>
+                    {errors.pickup_date && (
+                    <div className="text-xs text-red-600 mt-1">{errors.pickup_date}</div>
                     )}
-                    </div>
-                )}
                 </div>
-            </div>
+                
+                
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-                <Label htmlFor="pickup_date">Pick Up Date</Label>
-                <div className="relative">
-                <Input type="date" id="pickup_date" name="pickup_date" min={todayISO} value={form.pickup_date}
-                    onChange={(e) => changeField("pickup_date", e.target.value)} />
-                <CalendarIcon className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
+                
+                <div className="space-y-2">
+                    <Label htmlFor="pickup_time">Pick Up Time</Label>
+                    <div className="relative">
+                    <Input type="time" id="pickup_time" name="pickup_time" value={form.pickup_time}
+                    onChange={(e) => changeField("pickup_time", e.target.value)}/>
+                    <ClockIcon className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
+                    </div>
+                    {errors.pickup_time && (
+                    <div className="text-xs text-red-600 mt-1">{errors.pickup_time}</div>
+                    )}
                 </div>
-                {errors.pickup_date && (
-                <div className="text-xs text-red-600 mt-1">{errors.pickup_date}</div>
-                )}
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="pickup_time">Pick Up Time</Label>
-                <div className="relative">
-                <Input type="time" id="pickup_time" name="pickup_time" value={form.pickup_time}
-                onChange={(e) => changeField("pickup_time", e.target.value)}/>
-                <ClockIcon className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
+                <div>
+                    <div className="space-y-2">
+                    <Label htmlFor="drop_location">Drop Location</Label>
+                    <Select
+                        id="drop_location" placeholder="Select Drop Location" name="drop_location"
+                        value={form.drop_location}
+                        onValueChange={(value) => {
+                        changeField("drop_location", value)
+                        }}
+                    >
+                        <SelectTrigger className="w-full">
+                        <SelectValue/>
+                        </SelectTrigger>
+                        <SelectContent>
+                        <SelectItem value="Airport">Airport</SelectItem>
+                        <SelectItem value="Railway Station">Railway Station</SelectItem>
+                        <SelectItem value="Bus Stop">Bus Stop</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    {errors.drop_location && (
+                        <div className="text-xs text-red-600 mt-1">{errors.drop_location}</div>
+                    )}
+                    {form.drop_location === "Other" && (
+                        <div className="space-y-2">
+                        <div>
+                            <Input type="text" id="drop_location_other" name="drop_location_other" value={form.drop_location_other}
+                            onChange={(e) => changeField("drop_location_other", e.target.value)} />
+                        </div>
+                        {errors.pickup_location_other && (
+                            <div className="text-xs text-red-600 mt-1">{errors.drop_location_other}</div>
+                        )}
+                        </div>
+                    )}
+                    </div>
                 </div>
-                {errors.pickup_time && (
-                <div className="text-xs text-red-600 mt-1">{errors.pickup_time}</div>
-                )}
-            </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-                <Label htmlFor="drop_date">Drop Date</Label>
-                <div className="relative">
-                <Input type="date" id="drop_date" name="drop_date" value={form.drop_date} readOnly disabled/>
-                <CalendarIcon className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
+                <div className="space-y-2">
+                    <Label htmlFor="drop_date">Drop Date</Label>
+                    <div className="relative">
+                    <Input type="date" id="drop_date" name="drop_date" value={form.drop_date} readOnly disabled/>
+                    <CalendarIcon className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
+                    </div>
+                    {errors.drop_date && (
+                    <div className="text-xs text-red-600 mt-1">{errors.drop_date}</div>
+                    )}
                 </div>
-                {errors.drop_date && (
-                <div className="text-xs text-red-600 mt-1">{errors.drop_date}</div>
-                )}
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="drop_time">Drop Time</Label>
-                <div className="relative">
-                <Input type="time" id="drop_time" name="drop_time" value={form.drop_time}
-                    onChange={(e) => changeField("drop_time", e.target.value)} />
-                <ClockIcon className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
+                <div className="space-y-2">
+                    <Label htmlFor="drop_time">Drop Time</Label>
+                    <div className="relative">
+                    <Input type="time" id="drop_time" name="drop_time" value={form.drop_time}
+                        onChange={(e) => changeField("drop_time", e.target.value)} />
+                    <ClockIcon className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
+                    </div>
+                    {errors.drop_time && (
+                    <div className="text-xs text-red-600 mt-1">{errors.drop_time}</div>
+                    )}
                 </div>
-                {errors.drop_time && (
-                <div className="text-xs text-red-600 mt-1">{errors.drop_time}</div>
-                )}
-            </div>
             </div>
 
             <div className="space-y-4">
-            <Label>Travelers</Label>
-            
-            
-            <div className="flex items-center justify-between p-3 border rounded-lg">
-                <span className="capitalize font-medium">
-                Adults(12+)
-                </span>
-                <div className="flex items-center gap-3">
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => dec("adults_total", 1)}
-                    // disabled={count === 0}
-                >
-                    <MinusIcon className="w-4 h-4" />
-                </Button>
-                <span className="w-8 text-center font-medium">{form.adults_total}</span>
-                <Button variant="outline"
-                    size="sm" 
-                    onClick={() => inc("adults_total")}>
-                    <PlusIcon className="w-4 h-4" />
-                </Button>
+                <Label>Travelers</Label>
+                
+                
+                <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <span className="capitalize font-medium">
+                    Adults(12+)
+                    </span>
+                    <div className="flex items-center gap-3">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => dec("adults_total", 1)}
+                        // disabled={count === 0}
+                    >
+                        <MinusIcon className="w-4 h-4" />
+                    </Button>
+                    <span className="w-8 text-center font-medium">{form.adults_total}</span>
+                    <Button variant="outline"
+                        size="sm" 
+                        onClick={() => inc("adults_total")}>
+                        <PlusIcon className="w-4 h-4" />
+                    </Button>
+                    </div>
+                    {errors.adults_total && (
+                    <div className="text-xs text-red-600 mt-1">{errors.adults_total}</div>
+                    )}
                 </div>
-                {errors.adults_total && (
-                <div className="text-xs text-red-600 mt-1">{errors.adults_total}</div>
-                )}
-            </div>
 
-            <div className="flex items-center justify-between p-3 border rounded-lg">
-                <span className="capitalize font-medium">
-                Children (2-11)
-                </span>
-                <div className="flex items-center gap-3">
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => dec("children", 0)}
-                    // disabled={count === 0}
-                >
-                    <MinusIcon className="w-4 h-4" />
-                </Button>
-                <span className="w-8 text-center font-medium">{form.children}</span>
-                <Button variant="outline"
-                    size="sm" 
-                    onClick={() => inc("children")}>
-                    <PlusIcon className="w-4 h-4" />
-                </Button>
+                <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <span className="capitalize font-medium">
+                    Children (2-11)
+                    </span>
+                    <div className="flex items-center gap-3">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => dec("children", 0)}
+                        // disabled={count === 0}
+                    >
+                        <MinusIcon className="w-4 h-4" />
+                    </Button>
+                    <span className="w-8 text-center font-medium">{form.children}</span>
+                    <Button variant="outline"
+                        size="sm" 
+                        onClick={() => inc("children")}>
+                        <PlusIcon className="w-4 h-4" />
+                    </Button>
+                    </div>
                 </div>
-            </div>
 
-            <div className="flex items-center justify-between p-3 border rounded-lg">
-                <span className="capitalize font-medium">
-                Infants (0-23 months)
-                </span>
-                <div className="flex items-center gap-3">
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => dec("infants", 0)}
-                    // disabled={count === 0}
-                >
-                    <MinusIcon className="w-4 h-4" />
-                </Button>
-                <span className="w-8 text-center font-medium">{form.infants}</span>
-                <Button variant="outline"
-                    size="sm" 
-                    onClick={() => inc("infants")}>
-                    <PlusIcon className="w-4 h-4" />
-                </Button>
+                <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <span className="capitalize font-medium">
+                    Infants (0-23 months)
+                    </span>
+                    <div className="flex items-center gap-3">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => dec("infants", 0)}
+                        // disabled={count === 0}
+                    >
+                        <MinusIcon className="w-4 h-4" />
+                    </Button>
+                    <span className="w-8 text-center font-medium">{form.infants}</span>
+                    <Button variant="outline"
+                        size="sm" 
+                        onClick={() => inc("infants")}>
+                        <PlusIcon className="w-4 h-4" />
+                    </Button>
+                    </div>
                 </div>
-            </div>
             
             </div>
 
@@ -494,7 +495,7 @@ const PackageBooking = ({ selectedPackage, setSelectedPackage, defaultPackage, s
             <div className="text-xs mt-1 opacity-90">This is an estimated amount</div>
             </div> */}
 
-            <div className="mt-3 flex justify-between">
+            <div className="mt-auto flex justify-between">
             <span></span>
             <button onClick={handleNext} className="px-4 py-2 bg-teal-600 text-white rounded ">
                 Next →

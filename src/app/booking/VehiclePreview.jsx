@@ -12,7 +12,7 @@ const VehiclePreview = ({vehicleType, filteredVehicles, selectedVehicle, setSele
             </CardTitle>
         </CardHeader>
         <CardContent className="overflow-y-auto">
-            <div className="grid grid-rows-1 gap-6 mt-5">
+            <div className="grid grid-rows-1 gap-6">
                 {
                 !vehicleType ? (
                     <div className="p-6 text-center text-gray-600">

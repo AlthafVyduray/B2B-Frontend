@@ -20,7 +20,7 @@ export default function ProfileMenu() {
     document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
-  console.log(user)
+
   return (
     <div className="relative z-50" ref={menuRef}>
       {/* Avatar Button */}

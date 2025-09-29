@@ -5,17 +5,7 @@ import { useEffect } from "react";
 import useAdminStore from "@/stores/useAdminStore";
 import { Badge } from "@/components/ui/badge"
 import {
-  ClipboardList,
   DollarSign,
-  Search,
-  UserCheck,
-  Users,
-  MapPin,
-  Plane,
-  Star,
-  AlertCircle,
-  Package,
-  Globe,
   User,
   CalendarDays
 } from "lucide-react"
@@ -53,50 +43,8 @@ export default function Dashboard() {
     },
   ];
 
-  const recentBookings = bookings.slice(0,4);
+  const recentBookings = bookings.slice(0,6);
   
-  // const recentBookings = [
-  //   {
-  //     id: 1,
-  //     customer: "Alice Johnson",
-  //     destination: "Paris, France",
-  //     package: "Romantic Getaway",
-  //     amount: "$2,450",
-  //     status: "Confirmed",
-  //   },
-  //   {
-  //     id: 2,
-  //     customer: "Bob Smith",
-  //     destination: "Tokyo, Japan",
-  //     package: "Cultural Tour",
-  //     amount: "$3,200",
-  //     status: "Pending",
-  //   },
-  //   {
-  //     id: 3,
-  //     customer: "Carol Davis",
-  //     destination: "Bali, Indonesia",
-  //     package: "Beach Resort",
-  //     amount: "$1,800",
-  //     status: "Confirmed",
-  //   },
-  //   {
-  //     id: 4,
-  //     customer: "David Wilson",
-  //     destination: "New York, USA",
-  //     package: "City Break",
-  //     amount: "$1,950",
-  //     status: "Cancelled",
-  //   },
-  // ]
-  
-
-  // const travelPackages = [
-  //   { name: "Romantic Getaway", bookings: 89, price: "$2,450", rating: 4.8 },
-  //   { name: "Adventure Trek", bookings: 76, price: "$1,890", rating: 4.6 },
-  //   { name: "Cultural Tour", bookings: 65, price: "$3,200", rating: 4.9 },
-  //   { name: "Beach Resort", bookings: 54, price: "$1,800", rating: 4.7 },
-  // ]
 
   return (
     <div className="flex min-h-screen">
@@ -123,74 +71,6 @@ export default function Dashboard() {
                 </div>
               ))
             }
-            {/* <div className="bg-white p-6 rounded-xl shadow flex items-center gap-4">
-              <ClipboardList className="text-blue-600" size={28} />
-              <div>
-                <h3 className="text-gray-500 text-sm">Total Bookings</h3>
-                <p className="text-2xl font-bold text-black">1,245</p>
-                <span className="text-green-500 text-xs">+12% this month</span>
-              </div>
-            </div>
-            <div className="bg-white p-6 rounded-xl shadow flex items-center gap-4">
-              <Users className="text-green-600" size={28} />
-              <div>
-                <h3 className="text-gray-500 text-sm">Active Customers</h3>
-                <p className="text-2xl font-bold text-black">3,580</p>
-                <span className="text-green-500 text-xs">+8% this month</span>
-              </div>
-            </div>
-            <div className="bg-white p-6 rounded-xl shadow flex items-center gap-4">
-              <MapPin className="text-purple-600" size={28} />
-              <div>
-                <h3 className="text-gray-500 text-sm">Destinations</h3>
-                <p className="text-2xl font-bold text-black">156</p>
-                <span className="text-blue-500 text-xs">5 new added</span>
-              </div>
-            </div>
-            <div className="bg-white p-6 rounded-xl shadow flex items-center gap-4">
-              <DollarSign className="text-emerald-600" size={28} />
-              <div>
-                <h3 className="text-gray-500 text-sm">Monthly Revenue</h3>
-                <p className="text-2xl font-bold text-black">$387,450</p>
-                <span className="text-green-500 text-xs">+15% vs last month</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Travel Agency Specific Metrics */}
-            {/* <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-white p-6 rounded-xl shadow flex items-center gap-4">
-              <Package className="text-orange-600" size={28} />
-              <div>
-                <h3 className="text-gray-500 text-sm">Travel Packages</h3>
-                <p className="text-2xl font-bold text-black">48</p>
-                <span className="text-blue-500 text-xs">3 seasonal added</span>
-              </div>
-            </div>
-            <div className="bg-white p-6 rounded-xl shadow flex items-center gap-4">
-              <UserCheck className="text-indigo-600" size={28} />
-              <div>
-                <h3 className="text-gray-500 text-sm">Travel Agents</h3>
-                <p className="text-2xl font-bold text-black">128</p>
-                <span className="text-green-500 text-xs">5 verified today</span>
-              </div>
-            </div>
-            <div className="bg-white p-6 rounded-xl shadow flex items-center gap-4">
-              <Star className="text-yellow-600" size={28} />
-              <div>
-                <h3 className="text-gray-500 text-sm">Avg Rating</h3>
-                <p className="text-2xl font-bold text-black">4.8</p>
-                <span className="text-green-500 text-xs">+0.2 this month</span>
-              </div>
-            </div>
-            <div className="bg-white p-6 rounded-xl shadow flex items-center gap-4">
-              <AlertCircle className="text-red-600" size={28} />
-              <div>
-                <h3 className="text-gray-500 text-sm">Pending Issues</h3>
-                <p className="text-2xl font-bold text-black">7</p>
-                <span className="text-red-500 text-xs">2 urgent</span>
-              </div>
-            </div>*/}
           </div>
 
 

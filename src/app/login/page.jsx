@@ -4,8 +4,10 @@ import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import useAuthStore from "@/stores/useAuthStore";
+import { useRouter } from "next/navigation";
 
 export default function AuthPage() {
+    const router = useRouter();
     const [formData, setFormData] = useState({
         email: "",
         password: ""
@@ -37,6 +39,7 @@ export default function AuthPage() {
                 await login(formData);
                 setFormData({ email: "", password: "" });
                 setErrors({});
+                router.push("/booking");
             } catch (error) {
                 setIsLogin(false)
             } finally {
@@ -82,7 +85,8 @@ export default function AuthPage() {
 
                 {/* Heading */}
                 <h2 className="text-xl text-[#00000053] font-semibold mb-4">
-                    Begin Your Adventure                </h2>
+                    Begin Your Adventure
+                </h2>
 
 
 

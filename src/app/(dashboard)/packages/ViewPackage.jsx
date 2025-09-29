@@ -32,14 +32,14 @@ const ViewPackage = ({ selectedPackage, setSelectedPackage, packages }) => {
             <div className="text-right">
               {packages?.some(pkg => pkg?._id === selectedPackage?._id) ? (
                 <p className="text-2xl font-extrabold text-blue-600">
-                  ${selectedPackage?.price?.toLocaleString() ?? "N/A"}
+                  ₹{selectedPackage?.price?.toLocaleString() ?? "N/A"}
                 </p>
               ) : (
                 <div className="text-small text-blue-600">
-                  <p>Adult: ${selectedPackage?.pricing?.adult?.toLocaleString() ?? "N/A"}</p>
-                  <p>Child With Bed: ${selectedPackage?.pricing?.childWithBed?.toLocaleString() ?? "N/A"}</p>
-                  <p>Child Without Bed: ${selectedPackage?.pricing?.childWithoutBed?.toLocaleString() ?? "N/A"}</p>
-                  <p>Infant: ${selectedPackage?.pricing?.infant?.toLocaleString() ?? "N/A"}</p>
+                  <p>Adult: ₹{selectedPackage?.pricing?.adult?.toLocaleString() ?? "N/A"}</p>
+                  <p>Child With Bed: ₹{selectedPackage?.pricing?.childWithBed?.toLocaleString() ?? "N/A"}</p>
+                  <p>Child Without Bed: ₹{selectedPackage?.pricing?.childWithoutBed?.toLocaleString() ?? "N/A"}</p>
+                  <p>Infant: ₹{selectedPackage?.pricing?.infant?.toLocaleString() ?? "N/A"}</p>
                 </div>
               )}
 

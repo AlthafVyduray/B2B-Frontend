@@ -136,14 +136,19 @@ const useAdminStore = create((set, get) => ({
     updateBooking: async (id, data) => {
         try {
             const res = await axiosInstance.put(`/admin/booking-details/${id}`, data);
+            await get().getBookings();
+
+            toast.success("Booking Edited Successfully")
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Failed to Edit Booking");
+        }
+    },
+
+    updateDefaultBooking: async (id, data) => {
+        try {
+            const res = await axiosInstance.put(`/admin/booking-details/default/${id}`, data);
             
-            set((state) => ({
-                bookings: state.bookings.map((booking) =>
-                    booking._id === id 
-                    ? { ...res.data.booking, source: res.data.source } 
-                    : booking
-                )
-            }));
+            await get().getBookings();
 
             toast.success("Booking Edited Successfully")
         } catch (error) {

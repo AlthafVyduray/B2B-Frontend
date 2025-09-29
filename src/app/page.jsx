@@ -17,7 +17,7 @@ export default function TravelHeroComponent() {
   return (
     <>
       {/* Hero Section */}
-      <section className='bg-[url("/images/1.jpg")] bg-cover bg-center h-screen border rounded-4xl lg:m-10 m-4'>
+      <section className='bg-[url("https://hyderabadtourpackage.in/images/places-to-visit/ramoji-film-city-hyderabad-entryfee-timings-tour-package-small.jpg")] bg-cover bg-center h-screen border rounded-4xl lg:m-10 m-4'>
         <div className='w-full h-full grid lg:grid-cols-2 px-4 sm:px-6 md:px-10 lg:px-20 relative'>
           
           {/* User Icon */}

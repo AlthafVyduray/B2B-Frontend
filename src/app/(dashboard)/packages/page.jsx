@@ -349,19 +349,19 @@ export default function PackagesPage() {
                     <div className="text-right">
                       <div className="text-small text-blue-600">
                         <p>
-                          Adult: $
+                          Adult: ₹
                           {(pkg?.pricing?.adult ?? 0).toLocaleString()}
                         </p>
                         <p>
-                          Child With Bed: $
+                          Child With Bed: ₹
                           {(pkg?.pricing?.childWithBed ?? 0).toLocaleString()}
                         </p>
                         <p>
-                          Child Without Bed: $
+                          Child Without Bed: ₹
                           {(pkg?.pricing?.childWithoutBed ?? 0).toLocaleString()}
                         </p>
                         <p>
-                          Infant: $
+                          Infant: ₹
                           {(pkg?.pricing?.infant ?? 0).toLocaleString()}
                         </p>
                       </div>
@@ -458,9 +458,9 @@ export default function PackagesPage() {
                     </div>
                     <div className="text-right">
                       <p className="text-2xl font-extrabold text-blue-600">
-                        ${(pkg?.price ?? 0).toLocaleString()}
+                        ₹{(pkg?.price ?? 0).toLocaleString()}
                       </p>
-                      <p className="text-sm text-gray-500">{pkg.days}</p>
+                      <p className="text-sm text-gray-500">{pkg.days}Days</p>
                     </div>
                   </div>
 

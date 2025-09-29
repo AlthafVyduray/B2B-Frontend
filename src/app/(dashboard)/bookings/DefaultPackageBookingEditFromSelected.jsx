@@ -38,11 +38,7 @@ const combineDateTimeToISO = (dateStr, timeStr) => {
 const cloneDeep = (obj) => JSON.parse(JSON.stringify(obj || {}));
 
 // ---------- Component ----------
-export default function DefaultPackageBookingEditModal({
-  editedBooking,
-  setEditedBooking,
-  onCancel, // optional callback if parent passes it
-}) {
+export default function DefaultPackageBookingEditModal({ editedBooking, setEditedBooking, updateDefaultBooking}) {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
@@ -87,7 +83,6 @@ export default function DefaultPackageBookingEditModal({
     setServerErrors(null);
     setErrors({});
     if (typeof setEditedBooking === "function") setEditedBooking(null);
-    if (typeof onCancel === "function") onCancel();
   };
 
   // populate form when editedBooking changes; deep-clone to avoid accidental mutation
@@ -126,8 +121,6 @@ export default function DefaultPackageBookingEditModal({
       agent_commission: data.pricing?.agent_commission ?? 0,
       base_total: data.pricing?.base_total ?? "",
       total_amount: data.pricing?.total_amount ?? "",
-
-      type: data.type ?? "default",
     });
 
     setLoading(false);
@@ -258,14 +251,13 @@ export default function DefaultPackageBookingEditModal({
         return;
       }
 
-      console.log("PATCH payload for booking", editedBooking._id, payload);
 
       // Use PATCH for partial update - change to PUT if your server only supports PUT (but be cautious)
-      const res = await axiosInstance.put(`/admin/booking-details/default/${editedBooking._id}`, payload);
+      await updateDefaultBooking(editedBooking._id, payload)
 
       // success: reset and close
       setForm(defaultForm);
-      alert("Booking updated");
+
       closeModal();
     } catch (err) {
       console.error("Update failed:", err);

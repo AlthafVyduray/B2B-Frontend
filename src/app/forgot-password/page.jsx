@@ -44,7 +44,7 @@ const ForgotPasswordPage = () => {
       // ✅ Redirect after success
       router.push("/reset-password");
     } catch (error) {
-      console.log(error);
+
     } finally {
       setLoading(false);
     }

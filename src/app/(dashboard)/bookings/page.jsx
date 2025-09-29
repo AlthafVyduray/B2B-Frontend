@@ -15,6 +15,7 @@ import Sidebar from "@/app/components/admin/Sidebar"
 import { CalendarDays, Clock, CheckCircle, DollarSign } from "lucide-react";
 import Header from "@/app/components/admin/Hearder"
 import DefaultPackageBookingEditFromSelected from "./DefaultPackageBookingEditFromSelected"
+import { indianStates } from "@/constants/indianStates"
 
 
 // ---------- helpers ----------
@@ -75,8 +76,8 @@ const formatDateTimeDisplay = (dateValue, timeValue) => {
 
 
 export default function BookingsPage() {
-    const [searchTerm, setSearchTerm] = useState("")
-    const [stateFilter, setStateFilter] = useState("")
+  const [searchTerm, setSearchTerm] = useState("")
+  const [stateFilter, setStateFilter] = useState("")
   const {
       getVehicles,
       vehicles,
@@ -90,6 +91,7 @@ export default function BookingsPage() {
       bookingStats,
       confirmBooking,
       cancelBooking,
+      updateDefaultBooking,
       bookingPagination = { page: 1, totalPages: 1, limit: 10, total: 0 },
     } = useAdminStore();
 
@@ -106,7 +108,7 @@ export default function BookingsPage() {
   
     
   
-console.log(bookingStats.cancelledBookings)
+// datas for stats display
 const stats = [
   {
     title: "Total Bookings",
@@ -135,7 +137,7 @@ const stats = [
 ];
 
 
-  // default form shape matching booking schema (extended)
+  // default form shape matching booking schema for resetting the form 
   const defaultForm = {
     email: "",
     mobile_number: "",
@@ -165,7 +167,6 @@ const stats = [
     rooms: 1,
     extra_beds: 0,
     guideNeeded: false,
-    // added fields
     agent_commission: 0,
     base_total: 0,
     total_amount: 0
@@ -180,26 +181,31 @@ const stats = [
     }
   }, [editedBooking])
 
-
+  // when search/state filter changes, reset to page 1
   useEffect(() => {
-      if (page === 1) {
-      getBookings({ stateFilter, searchTerm, page, limit });
-       
-      } else {
-        setPage(1);
-      } 
-    }, [stateFilter, searchTerm]);
-  // fetch bookings on mount
+    const effectiveState = stateFilter === "all" ? "" : stateFilter;
+
+    if (page === 1) {
+      getBookings({ stateFilter: effectiveState, searchTerm, page, limit });
+    } else {
+      setPage(1);
+    }
+  }, [stateFilter, searchTerm]);
+
+  // fetch bookings on mount + whenever pagination changes
   useEffect(() => {
     if (typeof getBookings === "function") {
-      getBookings({ stateFilter, searchTerm, page, limit });
+      const effectiveState = stateFilter === "all" ? "" : stateFilter;
+
+      getBookings({ stateFilter: effectiveState, searchTerm, page, limit });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stateFilter, searchTerm, page, limit]);
 
-    
 
-    useEffect(() => {
+    
+    //Populating the values of booking details in editing normal package form
+  useEffect(() => {
     if (editedBooking && editedBooking.source === "booking") {
       const pkgId = editedBooking.package_id && typeof editedBooking.package_id === "object"
         ? (editedBooking.package_id || "")
@@ -321,7 +327,6 @@ const stats = [
     try {
       if (typeof updateBooking === "function") {
         await updateBooking(editedBooking._id, payload);
-        console.log(bookings)
       } else {
         console.warn("updateBooking is not a function in store");
       }
@@ -375,244 +380,247 @@ const stats = [
   // small helper to format numbers/currency
   const fmt = (n) => (typeof n === "number" ? n.toLocaleString() : n ?? "—");
 
-    // const stats = [
-    //     { title: "Total Bookings", value: "1,245", icon: Calendar, color: "bg-blue-500" },
-    //     { title: "Confirmed", value: "892", icon: Users, color: "bg-green-500" },
-    //     { title: "Pending", value: "234", icon: CreditCard, color: "bg-yellow-500" },
-    //     { title: "Revenue", value: "₹12.5L", icon: Hotel, color: "bg-purple-500" },
-    // ]
-
-
-    const getStatusColor = (status) => {
-        switch (status) {
-            case "confirmed":
-                return "bg-green-100 text-green-800 border-green-200"
-            case "pending":
-                return "bg-yellow-100 text-yellow-800 border-yellow-200"
-            case "cancelled":
-                return "bg-red-100 text-red-800 border-red-200"
-            default:
-                return "bg-gray-100 text-gray-800 border-gray-200"
-        }
-    }
+  const getStatusColor = (status) => {
+      switch (status) {
+          case "confirmed":
+              return "bg-green-100 text-green-800 border-green-200"
+          case "pending":
+              return "bg-yellow-100 text-yellow-800 border-yellow-200"
+          case "cancelled":
+              return "bg-red-100 text-red-800 border-red-200"
+          default:
+              return "bg-gray-100 text-gray-800 border-gray-200"
+      }
+  }
 
   
-    return (
-        <div className=" bg-background flex lg:mt-0 mt-10">
-            {/* <Sidebar active="Destinations" /> */}
+  return (
+    <div className=" bg-background flex lg:mt-0 mt-10">
+        {/* <Sidebar active="Destinations" /> */}
 
-            <main className="flex-1 flex flex-col">
-                <Header />
-                <div className="p-6 space-y-6 bg-gray-50">
-                    {/* Header */}
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-3xl font-bold text-gray-900 text-balance">Bookings Management</h1>
-                            <p className="text-gray-600 mt-1">Manage and track all travel bookings</p>
-                        </div>
- 
-                    </div>
-                    
+      <main className="flex-1 flex flex-col">
+          <Header />
+          <div className="p-6 space-y-6 bg-gray-50">
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                  <div>
+                      <h1 className="text-3xl font-bold text-gray-900 text-balance">Bookings Management</h1>
+                      <p className="text-gray-600 mt-1">Manage and track all travel bookings</p>
+                  </div>
 
-                    {/* Stats Cards */}
-                    <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {stats.map((stat, index) => (
-                            <Card
-                                key={index}
-                                className="border-0 shadow-lg bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all duration-300"
-                            >
-                                <CardContent className="p-6">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-sm font-medium text-gray-600">{stat?.title}</p>
-                                            <p className="text-2xl font-bold text-gray-900 mt-1">{stat?.value}</p>
-                                        </div>
-                                        <div className={`p-3 rounded-full ${stat?.color}`}>
-                                            {stat?.icon}
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
+              </div>
+              
 
-                    {/* Filters */}
-                    <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
-                        <CardContent className="p-6">
-                            <div className="flex flex-col md:flex-row gap-4">
-                                <div className="flex-1">
-                                    <label className="text-sm font-medium text-gray-700 mb-2 block">Filter by State</label>
-                                    <Select value={stateFilter} onValueChange={setStateFilter}>
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="All states" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="Kerala">Kerala</SelectItem>
-                                            <SelectItem value="Tamil Nadu">Tamil Nadu</SelectItem>
-                                            <SelectItem value="Karnataka">Karnataka</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="flex-1">
-                                    <label className="text-sm font-medium text-gray-700 mb-2 block">Filter by Name or Email</label>
-                                    <div className="relative">
-                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                                        <Input
-                                            placeholder="Full name or email"
-                                            value={searchTerm}
-                                            onChange={(e) => setSearchTerm(e.target.value)}
-                                            className="pl-10"
-                                        />
-                                    </div>
-                                </div>
-                                <div className="flex items-end">
-                                    <Button
-                                        variant="outline"
-                                        onClick={clearFilters}
-                                    >
-                                        Clear
-                                    </Button>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Bookings Grid */}
-                    <div className="grid gap-6">
-                        {bookings.map((booking) => (
-                            <Card
-                                key={booking?._id}
-                                className="border-0 shadow-lg bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all duration-300"
-                            >
-                                <CardContent className="p-6">
-                                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                                        {/* Booking ID & Status */}
-                                        <div className="lg:col-span-3">
-                                            <div className="space-y-2 overflow-hidden">
-                                                <p className="text-xs text-gray-500 uppercase tracking-wide">Booking ID</p>
-                                                <p className="font-mono text-sm font-medium text-gray-900">{booking._id}</p>
-                                                <p className="text-xs text-gray-500">Created: {booking.createdAt}</p>
-                                                <p><Badge className={`${getStatusColor(booking.status)} capitalize`}>{booking.status}</Badge></p>
-                                                <p><Badge className={`${booking.source === "defaultPackageBooking" ? "bg-red-300" : "bg-blue-300" }`}>{booking.source === "booking" ? "Normal Package" : "Default Package"}</Badge></p>
-                                            </div>
-                                        </div>
-
-                                        {/* Contact Info */}
-                                        <div className="lg:col-span-3">
-                                            <div className="space-y-2">
-                                                <p className="text-xs text-gray-500 uppercase tracking-wide">Contact</p>
-                                                <p className="font-semibold text-gray-900">{booking.contact.name}</p>
-                                                <p className="text-sm text-gray-600">{booking.contact.email}</p>
-                                                <p className="text-sm text-gray-600">{booking.contact.mobile_number}</p>
-                                                <div className="flex items-center gap-1 text-sm text-gray-600">
-                                                    <MapPin className="w-3 h-3" />
-                                                    {booking.contact.state}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Package Info */}
-                                        <div className="lg:col-span-3">
-                                            <div className="space-y-2">
-                                                <p className="text-xs text-gray-500 uppercase tracking-wide">Package</p>
-                                                <p className="font-semibold text-gray-900">{booking.package_name}</p>
-                                                {/* <div className="flex items-center gap-1 text-sm text-cyan-600">
-                                                    <MapPin className="w-3 h-3" />
-                                                    {booking.package.destination}
-                                                </div> */}
-                                            </div>
-                                        </div>
-
-
-                                        {/* Pricing & Actions */}
-                                        <div className="lg:col-span-3">
-                                            <div className="space-y-2">
-                                                <p className="text-xs text-gray-500 uppercase tracking-wide">Total Amount</p>
-                                                <p className="text-2xl font-bold text-gray-900">₹{booking.pricing.total_amount?.toLocaleString()}</p>
-                                                <p className="text-xs text-gray-500">Base: ₹{booking.pricing.base_total?.toLocaleString()}</p>
-                                                <p className="text-xs text-gray-500">
-                                                    Commission: ₹{booking.pricing.agent_commission?.toLocaleString()}
-                                                </p>
-
-                                                <div className="flex gap-2 pt-2">
-                                                    <Button onClick={(e) => { e.stopPropagation(); setSelectedBooking(booking); console.log(booking) }} size="sm" variant="outline" className="flex-1 bg-transparent">
-                                                        <Eye className="w-3 h-3 mr-1" />
-                                                        View
-                                                    </Button>
-                                                    <Button onClick={(e) => { e.stopPropagation(); setEditedBooking(booking) }} size="sm" variant="outline" className="flex-1 bg-transparent">
-                                                        <Edit className="w-3 h-3 mr-1" />
-                                                        Edit
-                                                    </Button>
-                                                    <Button onClick={(e) => { e.stopPropagation(); setDeletedBooking(booking) }} size="sm" variant="outline" className="text-red-600 hover:text-red-700 bg-transparent">
-                                                        <Trash2 className="w-3 h-3" />
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-
-                    {bookings.length === 0 && (
-                        <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
-                            <CardContent className="p-12 text-center">
-                                <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                                <h3 className="text-lg font-semibold text-gray-900 mb-2">No bookings found</h3>
-                                <p className="text-gray-600">Try adjusting your search criteria or create a new booking.</p>
-                            </CardContent>
-                        </Card>
-                    )}
-                    <div className="flex justify-center items-center gap-2 mt-4">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={page === 1}
-                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+              {/* Stats Cards */}
+              <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {stats.map((stat, index) => (
+                      <Card
+                          key={index}
+                          className="border-0 shadow-lg bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all duration-300"
                       >
-                        Prev
-                      </Button>
+                          <CardContent className="p-6">
+                              <div className="flex items-center justify-between">
+                                  <div>
+                                      <p className="text-sm font-medium text-gray-600">{stat?.title}</p>
+                                      <p className="text-2xl font-bold text-gray-900 mt-1">{stat?.value}</p>
+                                  </div>
+                                  <div className={`p-3 rounded-full ${stat?.color}`}>
+                                      {stat?.icon}
+                                  </div>
+                              </div>
+                          </CardContent>
+                      </Card>
+                  ))}
+              </div>
 
-                      {Array.from({ length: bookingPagination.totalPages || 1 }, (_, i) => i + 1)
-                        .filter(
-                          (p) =>
-                            p === 1 ||
-                            p === bookingPagination.totalPages ||
-                            (p >= page - 1 && p <= page + 1)
-                        )
-                        .map((p, idx, arr) => {
-                          const prev = arr[idx - 1];
-                          const showDots = prev && p - prev > 1;
+              {/* Filters */}
+              <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+                  <CardContent className="p-6">
+                      <div className="flex flex-col md:flex-row gap-4">
+                          <div className="flex-1">
+                            <label className="text-sm font-medium text-gray-700 mb-2 block">
+                              Filter by State
+                            </label>
+                            <Select value={stateFilter} onValueChange={setStateFilter}>
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="All states" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">All states</SelectItem>
+                                {indianStates.map((state) => (
+                                  <SelectItem key={state} value={state}>
+                                    {state}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
 
-                          return (
-                            <React.Fragment key={p}>
-                              {showDots && <span className="px-2">...</span>}
+                          </div>
+                          <div className="flex-1">
+                              <label className="text-sm font-medium text-gray-700 mb-2 block">Filter by Name or Email</label>
+                              <div className="relative">
+                                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                  <Input
+                                      placeholder="Full name or email"
+                                      value={searchTerm}
+                                      onChange={(e) => setSearchTerm(e.target.value)}
+                                      className="pl-10"
+                                  />
+                              </div>
+                          </div>
+                          <div className="flex items-end">
                               <Button
-                                variant={page === p ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => setPage(p)}
+                                  variant="outline"
+                                  onClick={clearFilters}
                               >
-                                {p}
+                                  Clear
                               </Button>
-                            </React.Fragment>
-                          );
-                        })}
+                          </div>
+                      </div>
+                  </CardContent>
+              </Card>
 
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={page === (bookingPagination.totalPages || 1)}
-                        onClick={() => setPage((p) => Math.min(bookingPagination.totalPages || 1, p + 1))}
+              {/* Bookings Grid */}
+              <div className="grid gap-6">
+                  {bookings.map((booking) => (
+                      <Card
+                          key={booking?._id}
+                          className="border-0 shadow-lg bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all duration-300"
                       >
-                        Next
-                      </Button>
-                    </div>
-                </div>
-            </main>
-            
-            {/* VIEW Modal */}
+                          <CardContent className="p-6">
+                              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                                  {/* Booking ID & Status */}
+                                  <div className="lg:col-span-3">
+                                      <div className="space-y-2 overflow-hidden">
+                                          <p className="text-xs text-gray-500 uppercase tracking-wide">Booking ID</p>
+                                          <p className="font-mono text-sm font-medium text-gray-900">{booking?._id}</p>
+                                          <p className="text-xs text-gray-500">Created: {booking?.createdAt}</p>
+                                          <p><Badge className={`${getStatusColor(booking?.status)} capitalize`}>{booking?.status}</Badge></p>
+                                          <p><Badge className={`${booking?.source === "defaultPackageBooking" ? "bg-red-300" : "bg-blue-300" }`}>{booking?.source === "booking" ? "Normal Package" : "Default Package"}</Badge></p>
+                                      </div>
+                                  </div>
+
+                                  {/* Contact Info */}
+                                  <div className="lg:col-span-3">
+                                      <div className="space-y-2">
+                                          <p className="text-xs text-gray-500 uppercase tracking-wide">Contact</p>
+                                          <p className="font-semibold text-gray-900">{booking?.contact?.name}</p>
+                                          <p className="text-sm text-gray-600">{booking?.contact?.email}</p>
+                                          <p className="text-sm text-gray-600">{booking?.contact?.mobile_number}</p>
+                                          <div className="flex items-center gap-1 text-sm text-gray-600">
+                                              <MapPin className="w-3 h-3" />
+                                              {booking?.contact?.state}
+                                          </div>
+                                      </div>
+                                  </div>
+
+                                  {/* Package Info */}
+                                  <div className="lg:col-span-3">
+                                      <div className="space-y-2">
+                                          <p className="text-xs text-gray-500 uppercase tracking-wide">Package</p>
+                                          <p className="font-semibold text-gray-900">{booking?.package_name}</p>
+                                          {/* <div className="flex items-center gap-1 text-sm text-cyan-600">
+                                              <MapPin className="w-3 h-3" />
+                                              {booking.package.destination}
+                                          </div> */}
+                                      </div>
+                                  </div>
+
+
+                                  {/* Pricing & Actions */}
+                                  <div className="lg:col-span-3">
+                                      <div className="space-y-2">
+                                          <p className="text-xs text-gray-500 uppercase tracking-wide">Total Amount</p>
+                                          <p className="text-2xl font-bold text-gray-900">
+                                            ₹{booking?.pricing?.total_amount?.toLocaleString() ?? 0}
+                                          </p>
+                                          <p className="text-xs text-gray-500">
+                                            Base: ₹{booking?.pricing?.base_total?.toLocaleString() ?? 0}
+                                          </p>
+                                          <p className="text-xs text-gray-500">
+                                            Commission: ₹{booking?.pricing?.agent_commission?.toLocaleString() ?? 0}
+                                          </p>
+
+
+                                          <div className="flex gap-2 pt-2">
+                                              <Button onClick={(e) => { e.stopPropagation(); setSelectedBooking(booking) }} size="sm" variant="outline" className="flex-1 bg-transparent">
+                                                  <Eye className="w-3 h-3 mr-1" />
+                                                  View
+                                              </Button>
+                                              <Button onClick={(e) => { e.stopPropagation(); setEditedBooking(booking) }} size="sm" variant="outline" className="flex-1 bg-transparent">
+                                                  <Edit className="w-3 h-3 mr-1" />
+                                                  Edit
+                                              </Button>
+                                              <Button onClick={(e) => { e.stopPropagation(); setDeletedBooking(booking) }} size="sm" variant="outline" className="text-red-600 hover:text-red-700 bg-transparent">
+                                                  <Trash2 className="w-3 h-3" />
+                                              </Button>
+                                          </div>
+                                      </div>
+                                  </div>
+                              </div>
+
+                          </CardContent>
+                      </Card>
+                  ))}
+              </div>
+
+              {bookings?.length === 0 && (
+                  <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+                      <CardContent className="p-12 text-center">
+                          <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2">No bookings found</h3>
+                          <p className="text-gray-600">Try adjusting your search criteria or create a new booking.</p>
+                      </CardContent>
+                  </Card>
+              )}
+              <div className="flex justify-center items-center gap-2 mt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page === 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  Prev
+                </Button>
+
+                {Array.from({ length: bookingPagination.totalPages || 1 }, (_, i) => i + 1)
+                  .filter(
+                    (p) =>
+                      p === 1 ||
+                      p === bookingPagination.totalPages ||
+                      (p >= page - 1 && p <= page + 1)
+                  )
+                  .map((p, idx, arr) => {
+                    const prev = arr[idx - 1];
+                    const showDots = prev && p - prev > 1;
+
+                    return (
+                      <React.Fragment key={p}>
+                        {showDots && <span className="px-2">...</span>}
+                        <Button
+                          variant={page === p ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setPage(p)}
+                        >
+                          {p}
+                        </Button>
+                      </React.Fragment>
+                    );
+                  })}
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page === (bookingPagination.totalPages || 1)}
+                  onClick={() => setPage((p) => Math.min(bookingPagination.totalPages || 1, p + 1))}
+                >
+                  Next
+                </Button>
+              </div>
+          </div>
+      </main>
+          
+      {/* VIEW Modal */}
       {(selectedBooking && selectedBooking.source === "booking" ) && (
         <div className="fixed inset-0 z-50 bg-white/30 backdrop-blur-sm flex items-center justify-center px-4">
           <div className="bg-white w-full max-w-2xl rounded-lg shadow-xl relative overflow-y-auto max-h-[90vh] border border-gray-200">
@@ -650,9 +658,9 @@ const stats = [
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <p><strong>Booking ID:</strong> {selectedBooking?._id ?? "—"}</p>
                     <p><strong>Package:</strong> {selectedBooking?.package_name ?? "—"}</p>
-                    <p><strong>Pickup:</strong> {selectedBooking?.dates?.pickup_date ? String(selectedBooking.dates.pickup_date).slice(0,10) : "—"} {selectedBooking?.dates?.pickup_time ? `@ ${selectedBooking.dates.pickup_time}` : ""}</p>
+                    <p><strong>Pickup:</strong> {selectedBooking?.dates?.pickup_date ? formatDateDisplay(selectedBooking.dates.pickup_date) : "—"} {selectedBooking?.dates?.pickup_time ? `@ ${formatTimeDisplay(selectedBooking.dates.pickup_time)}` : ""}</p>
                     <p><strong>Pickup Location:</strong> {selectedBooking?.dates?.pickup_location ?? "—"}</p>
-                    <p><strong>Drop:</strong> {selectedBooking?.dates?.drop_date ? String(selectedBooking.dates.drop_date).slice(0,10) : "—"} {selectedBooking?.dates?.drop_time ? `@ ${selectedBooking.dates.drop_time}` : ""}</p>
+                    <p><strong>Drop:</strong> {selectedBooking?.dates?.drop_date ? formatDateDisplay(selectedBooking.dates.drop_date) : "—"} {selectedBooking?.dates?.drop_time ? `@ ${formatTimeDisplay(selectedBooking.dates.drop_time)}` : ""}</p>
                     <p><strong>Drop Location:</strong> {selectedBooking?.dates?.drop_location ?? "—"}</p>
                   </div>
                 </div>
@@ -738,21 +746,11 @@ const stats = [
                   <div className="border rounded-lg p-4">
                     <h3 className="font-semibold mb-2">Payment Details</h3>
                     <div className="grid grid-cols-2 gap-4 text-sm">
-                      <p><strong>Base Total:</strong> {fmt(selectedBooking?.pricing?.base_total)}</p>
-                      <p><strong>Agent Commission:</strong> {fmt(selectedBooking?.pricing?.agent_commission)}</p>
-                      <p className="text-lg font-bold"><strong>Total Amount:</strong> {fmt(selectedBooking?.pricing?.total_amount)}</p>
+                      <p><strong>Base Total:</strong> {fmt(selectedBooking?.pricing?.base_total ?? 0)}</p>
+                      <p><strong>Agent Commission:</strong> {fmt(selectedBooking?.pricing?.agent_commission ?? 0)}</p>
+                      <p className="text-lg font-bold"><strong>Total Amount:</strong> {fmt(selectedBooking?.pricing?.total_amount ?? 0)}</p>
                     </div>
                   </div>
-
-              
-
-                {/* Raw JSON */}
-                {/* <div className="border rounded-lg p-4">
-                  <h3 className="font-semibold mb-2">All booking fields (raw)</h3>
-                  <pre className="bg-gray-100 p-2 rounded text-xs overflow-auto max-h-48">
-                    {JSON.stringify(selectedBooking, null, 2)}
-                  </pre>
-                </div> */}
 
                 {/* Footer with Cancel */}
                 <div className="flex justify-between pt-4 border-t">
@@ -762,7 +760,7 @@ const stats = [
                   >
                     Confirm Booking
                   </button>
-                   <button
+                    <button
                     onClick={handleBookingCancel}
                     className="bg-blue-600 text-white px-5 py-2.5 rounded hover:bg-blue-700 text-sm font-semibold"
                   >
@@ -780,7 +778,7 @@ const stats = [
 
           </div>
         </div>
-        )}
+      )}
         
       
       {(selectedBooking && selectedBooking?.source === "defaultPackageBooking") && (
@@ -922,7 +920,7 @@ const stats = [
 
             <div className="flex justify-center gap-4 p-5">
               <button onClick={() => setDeletedBooking(null)} className="bg-gray-300 text-gray-800 px-5 py-2.5 rounded hover:bg-gray-400 text-lg font-semibold">Cancel</button>
-              <button onClick={() => { if (deletedBooking?._id) deleteBooking(deletedBooking._id); setDeletedBooking(null); }} className="bg-red-600 text-white px-5 py-2.5 rounded hover:bg-red-700 text-lg font-semibold">Delete</button>
+              <button onClick={() => { if (deletedBooking?._id) deleteBooking(deletedBooking?._id); setDeletedBooking(null); }} className="bg-red-600 text-white px-5 py-2.5 rounded hover:bg-red-700 text-lg font-semibold">Delete</button>
             </div>
           </div>
         </div>
@@ -1106,16 +1104,13 @@ const stats = [
             </form>
           </div>
         </div>
-        )}
+      )}
         
 
-        {(editedBooking && editedBooking.source === "defaultPackageBooking") && (
-          <DefaultPackageBookingEditFromSelected editedBooking={editedBooking} setEditedBooking={setEditedBooking} />
-        )}
-        
-
-
-
-        </div>
-    )
+      {(editedBooking && editedBooking.source === "defaultPackageBooking") && (
+        <DefaultPackageBookingEditFromSelected editedBooking={editedBooking} setEditedBooking={setEditedBooking} updateDefaultBooking={updateDefaultBooking} />
+      )}
+    
+    </div>
+  )
 }

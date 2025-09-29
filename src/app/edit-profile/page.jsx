@@ -4,7 +4,11 @@ import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import useAuthStore from "@/stores/useAuthStore";
-import Header from "../components/admin/Hearder";
+import Header from "../components/agent/Header";
+import { indianStates } from "@/constants/indianStates";
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, } from "@/components/ui/select"
+
 
 export default function EditProfilePage() {
   const { user, checkAuth, updateProfile } = useAuthStore();
@@ -81,7 +85,7 @@ export default function EditProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center px-4">
+    <div className="min-h-screen bg-background flex flex-col justify-center">
       <Header />
       <div className="w-full max-w-4xl mx-auto my-10 bg-white rounded-2xl shadow-xl p-8">
         <h2 className="text-2xl font-bold text-center text-blue-700 mb-2">
@@ -193,13 +197,24 @@ export default function EditProfilePage() {
                 />
               </div>
               <div>
-                <label>State</label>
-                <Input
+                <label className="block mb-1 font-medium">State</label>
+                <Select
                   value={formData.state}
-                  onChange={(e) =>
-                    setFormData({ ...formData, state: e.target.value })
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, state: value })
                   }
-                />
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select State" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {indianStates.map((state) => (
+                      <SelectItem key={state} value={state}>
+                        {state}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div className="mt-4">

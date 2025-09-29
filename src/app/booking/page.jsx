@@ -1,6 +1,7 @@
 "use client"
 
 import { AlertCircle } from "lucide-react";
+import { useRouter } from "next/navigation"
 
 import { useEffect, useState, useMemo } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -11,7 +12,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CalendarIcon, ClockIcon, PlusIcon, MinusIcon, CarIcon, BuildingIcon, PackageIcon, EyeIcon, Car } from "lucide-react"
 import useBookingStore from "@/stores/useBookingStore"
-import Header from "../components/admin/Hearder";
+import Header from "../components/agent/Header";
 import useAuthStore from "@/stores/useAuthStore";
 import PackagePreview from "./PackagePreview";
 import HotelPreview from "./HotelPreview";
@@ -21,7 +22,19 @@ import PackageBooking from "./PackageBooking";
 import VehicleBooking from "./VehicleBooking";
 
 
+
 export default function TravelBookingApp() {
+
+  //for formatting time to 12hr
+  const formatTime12 = (time24) => {
+    if (!time24) return "";
+    const [hours, minutes] = time24.split(":").map(Number);
+    const ampm = hours >= 12 ? "PM" : "AM";
+    const hours12 = hours % 12 === 0 ? 12 : hours % 12;
+    return `${hours12}:${minutes.toString().padStart(2, "0")} ${ampm}`;
+  };
+
+   const router = useRouter()
 
   //heght issue fixing leftcard content have the height of right card content
   const cards = document.querySelectorAll(".card");
@@ -42,7 +55,7 @@ export default function TravelBookingApp() {
 
   //state for identifying package is default or normal
   const [defaultPackage, setDefaultPackage] = useState(false);
-  
+
   //state for identifying selected package
   const [selectedPackage, setSelectedPackage] = useState(null);
   
@@ -110,16 +123,21 @@ export default function TravelBookingApp() {
     total_amount: 0
   });
 
-
+  const {user} = useAuthStore()
   
   //All api callls
   useEffect(() => {
+    if(!user) return
     getPackages()
-    getHotelsByRating(starRating)
     getVehicles()
     getPricing()
-  }, [starRating, getPackages, getHotelsByRating, getVehicles, getPricing])
-  
+  }, [user, getPackages, getVehicles, getPricing])
+
+  // Fetch hotels whenever starRating changes
+  useEffect(() => {
+    if(!user) return
+    getHotelsByRating(starRating)
+  }, [user, starRating, getHotelsByRating])
 
   // pick first default package if exists for select 
   const firstDefault = defaultPackages?.[0] || null;
@@ -211,7 +229,7 @@ export default function TravelBookingApp() {
 
       // prepare payload copy; apply "Other" overrides if present
       const payload = { ...form };
-      console.log(payload)
+
       if (payload.pickup_location === "Other" && (payload.pickup_location_other ?? "").trim()) {
         payload.pickup_location = payload.pickup_location_other.trim();
       }
@@ -223,7 +241,7 @@ export default function TravelBookingApp() {
 
       // success
       resetForm();
-      setTab("package")
+      router.push("/notification")
     } catch (error) {
       console.error("Failed to create booking:", error);
       // show user-friendly error UI here if you have one
@@ -406,7 +424,7 @@ export default function TravelBookingApp() {
 
       // success
       resetDefaultForm()
-      setTab("package")
+      router.push("/notification")
     } catch (error) {
       console.error("Failed to create booking:", error);
       // show user-friendly error UI here if you have one
@@ -477,7 +495,7 @@ const validateDefaultPackage = (values) => {
     if (!form.package_id && !defaultPackageForm.package_id) return;
     if (defaultPackage) {
       let total = 0;
-      console.log(total)
+
       const pkg = defaultPackages.find(p => p._id === defaultPackageForm.package_id);
       if (pkg) {
         if (defaultPackageForm.adults_total) {
@@ -493,7 +511,6 @@ const validateDefaultPackage = (values) => {
           total += pkg.pricing.infant * defaultPackageForm.infants
         }
       }
-      console.log(total)
 
 
       setDefaultPackageForm(prev => {
@@ -525,13 +542,13 @@ const validateDefaultPackage = (values) => {
         total += price.snowAdult * form.adults_total + price.snowChild * form.children;
       }
       if (form.extra_food?.breakfast) {
-        total += price.breakfast;
+        total += price.breakfast * (form.adults_total + form.children);
       }
       if (form.extra_food?.lunchVeg) {
-        total += price.lunchVeg;
+        total += price.lunchVeg * (form.adults_total + form.children);
       }
       if (form.extra_food?.lunchNonVeg) {
-        total += price.lunchNonVeg;
+        total += price.lunchNonVeg * (form.adults_total + form.children);
       }
       if (form.guideNeeded) {
         total += price.guide;
@@ -567,7 +584,7 @@ const validateDefaultPackage = (values) => {
         }
       }
     }
-    console.log(hotelPrice)
+
     if (form.vehicle_id) {
       const vehicle = Array.isArray(vehicles)
         ? vehicles.find(v => v._id === form.vehicle_id)
@@ -577,7 +594,7 @@ const validateDefaultPackage = (values) => {
         total += vehicle.price * (pkg?.days || 1);
       }
       }
-      console.log(total)
+
 
     setForm(prev => {
       if (prev.base_total === total) return prev; // avoid infinite loop
@@ -737,23 +754,22 @@ const handleNext = () => {
           <div >
             <div className="lg:col-span-3">
 
-              <div >
-                <TabsContent value="package" className="space-y-6 grid lg:grid-cols-2 gap-6 ">
-                  <PackagePreview selectedPackage={selectedPackage}/>
+              <TabsContent value="package" className="grid lg:grid-cols-2 gap-6 ">
+                <PackagePreview selectedPackage={selectedPackage}/>
 
-                  <PackageBooking selectedPackage={selectedPackage} setSelectedPackage={setSelectedPackage} defaultPackage={defaultPackage} setDefaultPackage={setDefaultPackage} defaultPackages={defaultPackages} packages={packages} form={form} setForm={setForm} defaultPackageForm={defaultPackageForm} setDefaultPackageForm={setDefaultPackageForm} errors={errors} handleNext={handleNext} />
-                  
-                </TabsContent>
-              </div>
+                <PackageBooking selectedPackage={selectedPackage} setSelectedPackage={setSelectedPackage} defaultPackage={defaultPackage} setDefaultPackage={setDefaultPackage} defaultPackages={defaultPackages} packages={packages} form={form} setForm={setForm} defaultPackageForm={defaultPackageForm} setDefaultPackageForm={setDefaultPackageForm} errors={errors} handleNext={handleNext} />
+                
+              </TabsContent>
+              
 
               
-              <TabsContent value="hotel" className="space-y-6 grid lg:grid-cols-2 gap-6">
+              <TabsContent value="hotel" className="grid lg:grid-cols-2 gap-6">
                 <HotelPreview hotels={hotels} selectedHotel={selectedHotel} setSelectedHotel={setSelectedHotel} setForm={setForm} />
                 <HotelBooking starRating={starRating} setStarRating={setStarRating} selectedHotel={selectedHotel}  form={form} setForm={setForm} goPrev={goPrev} goNext={goNext}/>
               </TabsContent>
 
               
-              <TabsContent value="vehicle" className="space-y-6 grid lg:grid-cols-2 gap-6">
+              <TabsContent value="vehicle" className="grid lg:grid-cols-2 gap-6">
                 <VehiclePreview vehicleType={vehicleType} filteredVehicles={filteredVehicles} selectedVehicle={selectedVehicle} setSelectedVehicle={setSelectedVehicle} setForm={setForm} />
                 <VehicleBooking vehicleType={vehicleType} setVehicleType={setVehicleType} vehicleTypes={vehicleTypes} form={form} setForm={setForm} goPrev={goPrev} goNext={goNext} />
               </TabsContent>
@@ -766,8 +782,275 @@ const handleNext = () => {
                       Booking Summary
                     </CardTitle>
                   </CardHeader>
-                  {!defaultPackage ? (
+                  {defaultPackage ? (
                     <CardContent className="space-y-6">
+                    {selectedPackage ? (
+                      <>
+                        <div className="border rounded-lg p-4">
+                          <h3 className="font-semibold mb-2">Package</h3>
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <p className="font-medium mb-3">{defaultPackageForm.package_name}</p>
+                              <div className="mb-3">
+                                
+                                <p>Pickup:</p>
+                                <p className="font-medium">pickup date: {defaultPackageForm.pickup_date ? defaultPackageForm.pickup_date : "--Not Selected--"}</p>
+                                <p>Drop:</p>
+                                <p className="font-medium">drop date: {defaultPackageForm.drop_date ? defaultPackageForm.drop_date : "--Not Selected--"}</p>
+                                
+                              </div>
+        
+                            </div>
+                            <span className="font-bold text-primary">₹{defaultPackageForm.base_total}</span>
+                          </div>
+                        </div>
+                        <div className="border rounded-lg p-4">
+                          <h3 className="font-semibold mb-4">Itineraries</h3>
+                          <div className="flex flex-col gap-4">
+                            {selectedPackage?.itineraries?.map((item, index) => (
+                              <div
+                                key={item.id ?? index}
+                                className="flex flex-col md:flex-row items-start gap-4 w-full rounded-md overflow-hidden shadow-sm"
+                              >
+                                {/* Left: image */}
+                                <div className="relative w-full md:w-1/3 h-48 rounded-md flex-shrink-0 bg-cover bg-center"
+                                    style={{ backgroundImage: `url(${item.image || PLACEHOLDER})` }}
+                                    role="img"
+                                    aria-label={item.description ? item.description.slice(0, 100) : "Itinerary image"}>
+                                  
+                                  {/* Day number badge */}
+                                  <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs font-semibold px-2 py-1 rounded-full shadow">
+                                    Day {item.day_number}
+                                  </div>
+                                </div>
+
+                                {/* Right: description */}
+                                <div className="flex-1 flex items-center">
+                                  <div className="rounded w-full">
+                                    <p className="text-sm text-black leading-snug line-clamp-6">
+                                      {item.description}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                      </>
+                      
+                    ) : (
+                      <div className="border rounded-lg p-4">
+                          <h3 className="font-semibold mb-2">Package</h3>
+                          <span>You are not selected any packages</span>
+                      </div>
+                    )}
+
+                    <div className="border rounded-lg p-4">
+                      <h3 className="font-semibold mb-2">Travelers</h3>
+                      <div className="space-y-1">
+                        {defaultPackageForm.adults_total > 0 && <p>Adults: {defaultPackageForm.adults_total}</p>}
+                        {defaultPackageForm.children_with_bed > 0 && <p>Child With Bed: {defaultPackageForm.children_with_bed}</p>}
+                        {defaultPackageForm.children_without_bed > 0 && <p>Child Without Bed: {defaultPackageForm.children_without_bed}</p>}
+                        {defaultPackageForm.infants > 0 && <p>Infants: {defaultPackageForm.infants}</p>}
+                        
+                            
+                      </div>
+                    </div>
+
+
+                    {selectedPackage?.inclusions && selectedPackage.inclusions.length > 0 && (
+                      <div className="border rounded-lg shadow-sm p-5 mt-4 bg-white">
+                        <h3 className="font-semibold text-lg text-gray-800 mb-4">Inclusions</h3>
+                        <ul className="space-y-3">
+                          {selectedPackage.inclusions.map((item, idx) => (
+                            <li key={idx} className="flex items-start gap-2">
+                              {/* Checkmark icon */}
+                              <svg
+                                className="w-5 h-5 text-green-500 flex-shrink-0 mt-1"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                                xmlns="http://www.w3.org/2000/svg"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M16.707 5.293a1 1 0 010 1.414l-7.5 7.5a1 1 0 01-1.414 0l-3.5-3.5a1 1 0 011.414-1.414L9 12.086l6.793-6.793a1 1 0 011.414 0z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                              <span className="text-gray-700">{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    <div className="border rounded-lg shadow-sm p-5 mt-4 bg-white">
+                      <h3 className="font-semibold text-lg text-gray-800 mb-4">Price Details</h3>
+                      {selectedPackage?.pricing && (
+                      <div className="grid grid-cols-2 gap-4 my-4">
+                        <div className="p-4 rounded-2xl shadow bg-white border">
+                          <p className="text-gray-500 text-sm">Per Adult</p>
+                          <p className="text-xl font-bold">
+                            ₹{selectedPackage.pricing.adult.toLocaleString()}
+                          </p>
+                        </div>
+                        <div className="p-4 rounded-2xl shadow bg-white border">
+                          <p className="text-gray-500 text-sm">Child with Bed (6–12 yrs)</p>
+                          <p className="text-xl font-bold">
+                            ₹{selectedPackage.pricing.childWithBed.toLocaleString()}
+                          </p>
+                        </div>
+                        <div className="p-4 rounded-2xl shadow bg-white border">
+                          <p className="text-gray-500 text-sm">Child without Bed (2–5 yrs)</p>
+                          <p className="text-xl font-bold">
+                            ₹{selectedPackage.pricing.childWithoutBed.toLocaleString()}
+                          </p>
+                        </div>
+                        <div className="p-4 rounded-2xl shadow bg-white border">
+                          <p className="text-gray-500 text-sm">Infant</p>
+                          <p className="text-xl font-bold">
+                            ₹{selectedPackage.pricing.infant.toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                      <div className="border rounded-lg p-4 bg-white shadow-sm">
+                      <h3 className="font-semibold mb-3 text-gray-700">Traveler Breakdown</h3>
+                      <div className="space-y-2">
+                        {defaultPackageForm.adults_total > 0 && (
+                          <div className="grid grid-cols-3 text-sm">
+                            <span>Adults</span>
+                            <span className="text-center">
+                              {defaultPackageForm.adults_total} × {selectedPackage?.pricing?.adult}
+                            </span>
+                            <span className="text-right font-medium">
+                              {defaultPackageForm.adults_total * selectedPackage?.pricing?.adult}
+                            </span>
+                          </div>
+                        )}
+
+                        {defaultPackageForm.children_with_bed > 0 && (
+                          <div className="grid grid-cols-3 text-sm">
+                            <span>Child With Bed</span>
+                            <span className="text-center">
+                              {defaultPackageForm.children_with_bed} × {selectedPackage?.pricing?.childWithBed}
+                            </span>
+                            <span className="text-right font-medium">
+                              {defaultPackageForm.children_with_bed * selectedPackage?.pricing?.childWithBed}
+                            </span>
+                          </div>
+                        )}
+
+                        {defaultPackageForm.children_without_bed > 0 && (
+                          <div className="grid grid-cols-3 text-sm">
+                            <span>Child Without Bed</span>
+                            <span className="text-center">
+                              {defaultPackageForm.children_without_bed} × {selectedPackage?.pricing?.childWithoutBed}
+                            </span>
+                            <span className="text-right font-medium">
+                              {defaultPackageForm.children_without_bed * selectedPackage?.pricing?.childWithoutBed}
+                            </span>
+                          </div>
+                        )}
+
+                        {defaultPackageForm.infants > 0 && (
+                          <div className="grid grid-cols-3 text-sm">
+                            <span>Infants</span>
+                            <span className="text-center">
+                              {defaultPackageForm.infants} × {selectedPackage?.pricing?.infant}
+                            </span>
+                            <span className="text-right font-medium">
+                              {defaultPackageForm.infants * selectedPackage?.pricing?.infant}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Total */}
+                        <div className="grid grid-cols-3 text-sm font-semibold border-t pt-2 mt-2">
+                          <span>Total</span>
+                          <span></span>
+                          <span className="text-right">{defaultPackageForm.base_total}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    </div>         
+          
+
+                    <div className="border-t pt-4">
+                      <div className="flex-1 space-y-3">
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={showAgentMarkup}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              setShowAgentMarkup(checked);
+                              if (!checked) {
+                                // reset totals
+                                setDefaultPackageForm((prev) => ({
+                                  ...prev,
+                                  total_amount: prev.base_total ?? 0,
+                                  base_total: prev.base_total ?? 0,
+                                  agent_commission: 0,
+                                }));
+                                setMarkupPercent("");
+                              }
+                            }}
+                            className="w-5 h-5"
+                          />
+                          <span>Add Agent Markup</span>
+                        </label>
+
+                        {showAgentMarkup && (
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              value={markupPercent}
+                              onChange={(e) => handleDefaultPackageAgentMarkupChange(e.target.value)}
+                              placeholder="Enter %"
+                              min="0"
+                              step="0.01"
+                              className="border p-2 rounded w-28"
+                            />
+                            <span className="text-sm">%</span>
+                          </div>
+                        )}
+
+                        {showAgentMarkup && (
+                          <p className="text-gray-700">
+                            Agent Commission: ₹{(defaultPackageForm.agent_commission ?? 0).toFixed(2)}
+                          </p>
+                        )}
+
+                        <p className="font-bold text-lg text-gray-900">
+                          Total Amount: ₹{(defaultPackageForm.total_amount ?? 0).toFixed(2)}
+                        </p>
+
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        *Final price may vary based on availability and additional services
+                      </p>
+                    </div>
+
+                    <div className="mt-3 flex justify-between">
+                      <button onClick={goPrev} className="px-4 py-2 bg-teal-600 text-white rounded ">
+                        ← Prev
+                      </button>
+                      <span></span>
+                    </div>
+
+                    <Button className="w-full" size="lg"
+                      onClick={handleSubmitDefault}
+                      disabled={submitting}>
+                      Complete Booking
+                    </Button>
+                  </CardContent>
+                  ) : (
+                    
+                  <CardContent className="space-y-6">
                     {selectedPackage ? (
                       <>
                         <div className="border rounded-lg p-4">
@@ -778,13 +1061,13 @@ const handleNext = () => {
                               <div className="mb-3">
                                 <p>Pickup:</p>
                                 <p className="font-medium">pickup date: {form.pickup_date ? form.pickup_date : "--Not Selected--"}</p>
-                                <p className="font-medium">pickup time: {form.pickup_time ? form.pickup_time : "--Not Selected--"}</p>
+                                <p className="font-medium">pickup time: {form.pickup_time ? formatTime12(form.pickup_time) : "--Not Selected--"}</p>
                                 <p className="font-medium">pickup location: {(form.pickup_location && form.pickup_location === "Other") ? form.pickup_location_other : form.pickup_location}</p>
                               </div>
                               <div className="mb-3">
                                 <p>Drop:</p>
                                 <p className="font-medium">drop date: {form.drop_date ? form.drop_date : "--Not Selected--"}</p>
-                                <p className="font-medium">drop time: {form.drop_time ? form.drop_time : "--Not Selected--"}</p>
+                                <p className="font-medium">drop time: {form.drop_time ? formatTime12(form.drop_time) : "--Not Selected--"}</p>
                                 <p className="font-medium">drop location: {(form.drop_location && form.drop_location === "Other") ? form.drop_location_other : form.drop_location}</p>
                               </div>
 
@@ -894,7 +1177,7 @@ const handleNext = () => {
                       <h3 className="font-semibold mb-2">Extras</h3>
                       <div className="flex justify-between items-center">
                         <div>
-                          <p className="text-sm">Extra Food: <span>{form.extra_food.breakfast && "Breakfast,"}</span> <span>{form.extra_food.lunchNonVeg && "lunchNonVeg,"}</span> <span>{form.extra_food.lunchVeg && "lunchVeg"}</span> </p>
+                          <p className="text-sm">Extra Food: <span>{form.extra_food?.breakfast && "Breakfast,"}</span> <span>{form.extra_food?.lunchNonVeg && "lunchNonVeg,"}</span> <span>{form.extra_food?.lunchVeg && "lunchVeg"}</span> </p>
                           <p className="text-sm">Guide Needed: {form.guideNeeded ? "Yes" : "No"}</p>
                           <p className="text-sm">Entry ticket : {form.entry_ticket_needed  ? "Yes" : "No"}</p>
                           <p className="text-sm">Snow world ticket : {form.snow_world_needed  ? "Yes" : "No"}</p>
@@ -1006,264 +1289,6 @@ const handleNext = () => {
                       onClick={handleSubmit}
                       disabled={submitting}>
                       Confirm Booking
-                    </Button>
-                  </CardContent>
-                  ) : (
-                    <CardContent className="space-y-6">
-                    {selectedPackage ? (
-                      <>
-                        <div className="border rounded-lg p-4">
-                          <h3 className="font-semibold mb-2">Package</h3>
-                          <div className="flex justify-between items-center">
-                            <div>
-                              <p className="font-medium mb-3">{defaultPackageForm.package_name}</p>
-        
-                            </div>
-                            <span className="font-bold text-primary">₹{defaultPackageForm.base_total}</span>
-                          </div>
-                        </div>
-                        <div className="border rounded-lg p-4">
-                          <h3 className="font-semibold mb-4">Itineraries</h3>
-                          <div className="flex flex-col gap-4">
-                            {selectedPackage?.itineraries?.map((item, index) => (
-                              <div
-                                key={item.id ?? index}
-                                className="flex flex-col md:flex-row items-start gap-4 w-full rounded-md overflow-hidden shadow-sm"
-                              >
-                                {/* Left: image */}
-                                <div className="relative w-full md:w-1/3 h-48 rounded-md flex-shrink-0 bg-cover bg-center"
-                                    style={{ backgroundImage: `url(${item.image || PLACEHOLDER})` }}
-                                    role="img"
-                                    aria-label={item.description ? item.description.slice(0, 100) : "Itinerary image"}>
-                                  
-                                  {/* Day number badge */}
-                                  <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs font-semibold px-2 py-1 rounded-full shadow">
-                                    Day {item.day_number}
-                                  </div>
-                                </div>
-
-                                {/* Right: description */}
-                                <div className="flex-1 flex items-center">
-                                  <div className="rounded w-full">
-                                    <p className="text-sm text-black leading-snug line-clamp-6">
-                                      {item.description}
-                                    </p>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                      </>
-                      
-                    ) : (
-                      <div className="border rounded-lg p-4">
-                          <h3 className="font-semibold mb-2">Package</h3>
-                          <span>You are not selected any packages</span>
-                      </div>
-                    )}
-
-                    <div className="border rounded-lg p-4">
-                      <h3 className="font-semibold mb-2">Travelers</h3>
-                      <div className="space-y-1">
-                        {defaultPackageForm.adults_total > 0 && <p>Adults: {defaultPackageForm.adults_total}</p>}
-                        {defaultPackageForm.children_with_bed > 0 && <p>Child With Bed: {defaultPackageForm.children_with_bed}</p>}
-                        {defaultPackageForm.children_without_bed > 0 && <p>Child Without Bed: {defaultPackageForm.children_without_bed}</p>}
-                        {defaultPackageForm.infants > 0 && <p>Infants: {defaultPackageForm.infants}</p>}
-                        
-                            
-                      </div>
-                    </div>
-
-
-                    {selectedPackage?.inclusions && selectedPackage.inclusions.length > 0 && (
-                      <div className="border rounded-lg shadow-sm p-5 mt-4 bg-white">
-                        <h3 className="font-semibold text-lg text-gray-800 mb-4">Inclusions</h3>
-                        <ul className="space-y-3">
-                          {selectedPackage.inclusions.map((item, idx) => (
-                            <li key={idx} className="flex items-start gap-2">
-                              {/* Checkmark icon */}
-                              <svg
-                                className="w-5 h-5 text-green-500 flex-shrink-0 mt-1"
-                                fill="currentColor"
-                                viewBox="0 0 20 20"
-                                xmlns="http://www.w3.org/2000/svg"
-                              >
-                                <path
-                                  fillRule="evenodd"
-                                  d="M16.707 5.293a1 1 0 010 1.414l-7.5 7.5a1 1 0 01-1.414 0l-3.5-3.5a1 1 0 011.414-1.414L9 12.086l6.793-6.793a1 1 0 011.414 0z"
-                                  clipRule="evenodd"
-                                />
-                              </svg>
-                              <span className="text-gray-700">{item}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-              <div className="border rounded-lg shadow-sm p-5 mt-4 bg-white">
-                <h3 className="font-semibold text-lg text-gray-800 mb-4">Price Details</h3>
-                {selectedPackage?.pricing && (
-                <div className="grid grid-cols-2 gap-4 my-4">
-                  <div className="p-4 rounded-2xl shadow bg-white border">
-                    <p className="text-gray-500 text-sm">Per Adult</p>
-                    <p className="text-xl font-bold">
-                      ₹{selectedPackage.pricing.adult.toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="p-4 rounded-2xl shadow bg-white border">
-                    <p className="text-gray-500 text-sm">Child with Bed (6–12 yrs)</p>
-                    <p className="text-xl font-bold">
-                      ₹{selectedPackage.pricing.childWithBed.toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="p-4 rounded-2xl shadow bg-white border">
-                    <p className="text-gray-500 text-sm">Child without Bed (2–5 yrs)</p>
-                    <p className="text-xl font-bold">
-                      ₹{selectedPackage.pricing.childWithoutBed.toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="p-4 rounded-2xl shadow bg-white border">
-                    <p className="text-gray-500 text-sm">Infant</p>
-                    <p className="text-xl font-bold">
-                      ₹{selectedPackage.pricing.infant.toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-                <div className="border rounded-lg p-4 bg-white shadow-sm">
-                <h3 className="font-semibold mb-3 text-gray-700">Traveler Breakdown</h3>
-                <div className="space-y-2">
-                  {defaultPackageForm.adults_total > 0 && (
-                    <div className="grid grid-cols-3 text-sm">
-                      <span>Adults</span>
-                      <span className="text-center">
-                        {defaultPackageForm.adults_total} × {selectedPackage?.pricing?.adult}
-                      </span>
-                      <span className="text-right font-medium">
-                        {defaultPackageForm.adults_total * selectedPackage?.pricing?.adult}
-                      </span>
-                    </div>
-                  )}
-
-                  {defaultPackageForm.children_with_bed > 0 && (
-                    <div className="grid grid-cols-3 text-sm">
-                      <span>Child With Bed</span>
-                      <span className="text-center">
-                        {defaultPackageForm.children_with_bed} × {selectedPackage?.pricing?.childWithBed}
-                      </span>
-                      <span className="text-right font-medium">
-                        {defaultPackageForm.children_with_bed * selectedPackage?.pricing?.childWithBed}
-                      </span>
-                    </div>
-                  )}
-
-                  {defaultPackageForm.children_without_bed > 0 && (
-                    <div className="grid grid-cols-3 text-sm">
-                      <span>Child Without Bed</span>
-                      <span className="text-center">
-                        {defaultPackageForm.children_without_bed} × {selectedPackage?.pricing?.childWithoutBed}
-                      </span>
-                      <span className="text-right font-medium">
-                        {defaultPackageForm.children_without_bed * selectedPackage?.pricing?.childWithoutBed}
-                      </span>
-                    </div>
-                  )}
-
-                  {defaultPackageForm.infants > 0 && (
-                    <div className="grid grid-cols-3 text-sm">
-                      <span>Infants</span>
-                      <span className="text-center">
-                        {defaultPackageForm.infants} × {selectedPackage?.pricing?.infant}
-                      </span>
-                      <span className="text-right font-medium">
-                        {defaultPackageForm.infants * selectedPackage?.pricing?.infant}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Total */}
-                  <div className="grid grid-cols-3 text-sm font-semibold border-t pt-2 mt-2">
-                    <span>Total</span>
-                    <span></span>
-                    <span className="text-right">{defaultPackageForm.base_total}</span>
-                  </div>
-                </div>
-              </div>
-
-              </div>         
-    
-
-                    <div className="border-t pt-4">
-                      <div className="flex-1 space-y-3">
-                        <label className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={showAgentMarkup}
-                            onChange={(e) => {
-                              const checked = e.target.checked;
-                              setShowAgentMarkup(checked);
-                              if (!checked) {
-                                // reset totals
-                                setDefaultPackageForm((prev) => ({
-                                  ...prev,
-                                  total_amount: prev.base_total ?? 0,
-                                  base_total: prev.base_total ?? 0,
-                                  agent_commission: 0,
-                                }));
-                                setMarkupPercent("");
-                              }
-                            }}
-                            className="w-5 h-5"
-                          />
-                          <span>Add Agent Markup</span>
-                        </label>
-
-                        {showAgentMarkup && (
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="number"
-                              value={markupPercent}
-                              onChange={(e) => handleDefaultPackageAgentMarkupChange(e.target.value)}
-                              placeholder="Enter %"
-                              min="0"
-                              step="0.01"
-                              className="border p-2 rounded w-28"
-                            />
-                            <span className="text-sm">%</span>
-                          </div>
-                        )}
-
-                        {showAgentMarkup && (
-                          <p className="text-gray-700">
-                            Agent Commission: ₹{(defaultPackageForm.agent_commission ?? 0).toFixed(2)}
-                          </p>
-                        )}
-
-                        <p className="font-bold text-lg text-gray-900">
-                          Total Amount: ₹{(defaultPackageForm.total_amount ?? 0).toFixed(2)}
-                        </p>
-
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        *Final price may vary based on availability and additional services
-                      </p>
-                    </div>
-
-                    <div className="mt-3 flex justify-between">
-                      <button onClick={goPrev} className="px-4 py-2 bg-teal-600 text-white rounded ">
-                        ← Prev
-                      </button>
-                      <span></span>
-                    </div>
-
-                    <Button className="w-full" size="lg"
-                      onClick={handleSubmitDefault}
-                      disabled={submitting}>
-                      Complete Booking
                     </Button>
                   </CardContent>
                   )}

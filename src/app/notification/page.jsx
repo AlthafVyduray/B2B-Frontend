@@ -12,12 +12,14 @@ import {
   EyeIcon,
   Download,
   X,
+  Info,
+  XCircle
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import useBookingStore from "@/stores/useBookingStore";
 import { Button } from "@/components/ui/button";
-import Header from "../components/admin/Hearder";
+import Header from "../components/agent/Header";
 
 export default function NotificationPage() {
   const [selection, setSelection] = useState("notification");
@@ -41,19 +43,26 @@ export default function NotificationPage() {
     getAdminNotifications();
     getBookings();
     getPackages();
-    getHotelsByRating?.(2);
+    getHotelsByRating?.(0);
   }, [getAdminNotifications, getBookings, getPackages, getHotelsByRating]);
 
   const getTypeIcon = (type) => {
     switch ((type || "").toString().toLowerCase()) {
       case "booking":
+        // Warning/attention for new bookings
         return <AlertTriangle className="h-5 w-5 text-yellow-500" />;
       case "success":
+        // Successful action
         return <CheckCircle className="h-5 w-5 text-green-500" />;
       case "system":
+        // System info or updates
         return <Settings className="h-5 w-5 text-blue-500" />;
+      case "cancel":
+        // Error notifications
+        return <XCircle className="h-5 w-5 text-red-500" />;
       default:
-        return <Settings className="h-5 w-5 text-blue-500" />;
+        // Generic info
+        return <Info className="h-5 w-5 text-gray-500" />;
     }
   };
 
@@ -312,17 +321,35 @@ export default function NotificationPage() {
     });
   };
 
-  // show only time (e.g. 12:00 AM) — uses en-GB with hour12 true
-  const formatTime = (dateStr) => {
-    if (!dateStr) return "-";
-    const d = new Date(dateStr);
-    if (Number.isNaN(d.getTime())) return "-";
-    return d.toLocaleTimeString("en-GB", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
+  const formatTime = (value) => {
+    // Accepts:
+    // - full ISO datetime string
+    // - time-only strings "HH:MM" or "HH:MM:SS"
+    // Returns "02:30 PM" or "—" when invalid
+    if (value === undefined || value === null || value === "") return "—";
+    const s = String(value).trim();
+    // If looks like time-only "9:30", "09:30:00"
+    const timeOnlyMatch = s.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+    try {
+      if (timeOnlyMatch) {
+        const hh = Number(timeOnlyMatch[1]);
+        const mm = Number(timeOnlyMatch[2]);
+        if (hh >= 0 && hh <= 23 && mm >= 0 && mm <= 59) {
+          const tmp = new Date();
+          tmp.setHours(hh, mm, 0, 0);
+          return tmp.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: true });
+        }
+        return "—";
+      }
+      // Otherwise try parse as date/time
+      const d = new Date(s);
+      if (Number.isNaN(d.getTime())) return "—";
+      return d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: true });
+    } catch (err) {
+      return "—";
+    }
   };
+
 
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return "-";
@@ -372,18 +399,26 @@ export default function NotificationPage() {
       const wrapLines = (text, maxWidth) => doc.splitTextToSize(String(text ?? "-"), Math.max(10, maxWidth));
 
       const ensureSpace = (needed) => {
-        if (y + needed > pageHeight - margin - 20) {
+        // how much vertical space is left before reaching footer area
+        const bottomLimit = pageHeight - margin - 20;
+        if (y + needed > bottomLimit) {
           doc.addPage();
+          // reset y to top margin, then draw header which will advance y
           y = margin;
           renderHeader();
         }
       };
 
       const renderHeader = () => {
+        // draw header at current y (y should already be margin on a new page)
         doc.setFontSize(14);
         doc.setFont(undefined, "bold");
         doc.text(booking.package_name || "Booking Details", pageWidth / 2, y, { align: "center" });
+        // add spacing after header
         y += 10;
+        // reset to body font for subsequent text
+        doc.setFontSize(10);
+        doc.setFont(undefined, "normal");
       };
 
       const renderFooter = () => {
@@ -405,17 +440,52 @@ export default function NotificationPage() {
         y += 4;
       };
 
-      const addInlineKV = (label, value) => {
+      const addInlineKV = (label, value, options = {}) => {
+        // options: { fontSize: number }
+        const fontSize = options.fontSize || 10;
+        const labelStyle = "bold";
+        const valueStyle = "normal";
+
+        // compute a reasonable line height in mm (approx)
+        const lineHeight = Math.max(4, fontSize * 0.5 + 1);
+
+        // prepare text and widths
+        const labelText = `${label}:`;
+        doc.setFontSize(fontSize);
+        doc.setFont(undefined, labelStyle);
+        const labelWidth = doc.getTextWidth(labelText);
+
+        const valueMaxWidth = contentWidth - (margin + labelWidth + 4 - margin);
+        const valueStr = value == null ? "-" : String(value);
+        const valueLines = doc.splitTextToSize(valueStr, Math.max(10, valueMaxWidth));
+
+        // If label is too wide to fit inline nicely, put label on its own line
+        const inlineThreshold = contentWidth * 0.6; // if label takes >60% of width, don't inline
+        if (labelWidth + 4 > inlineThreshold) {
+          // label on its own line
+          ensureSpace(lineHeight + valueLines.length * lineHeight + 4);
+          doc.setFont(undefined, labelStyle);
+          doc.text(labelText, margin, y);
+          y += lineHeight;
+          doc.setFont(undefined, valueStyle);
+          doc.text(valueLines, margin, y);
+          y += valueLines.length * lineHeight + 4;
+        } else {
+          // inline label + value
+          ensureSpace(Math.max(lineHeight, valueLines.length * lineHeight) + 4);
+          // draw label
+          doc.setFont(undefined, labelStyle);
+          doc.text(labelText, margin, y);
+          // draw value (array allowed)
+          doc.setFont(undefined, valueStyle);
+          const valueX = margin + labelWidth + 4;
+          doc.text(valueLines, valueX, y);
+          y += valueLines.length * lineHeight + 4;
+        }
+
+        // reset default font settings to avoid leakage
         doc.setFontSize(10);
-        doc.setFont(undefined, "bold");
-        const labelWidth = doc.getTextWidth(`${label}:`);
-        const valueX = margin + labelWidth + 4;
-        const lines = wrapLines(value, contentWidth - (valueX - margin));
-        ensureSpace(lines.length * 6);
-        doc.text(`${label}:`, margin, y);
         doc.setFont(undefined, "normal");
-        doc.text(lines, valueX, y);
-        y += lines.length * 6 + 2;
       };
 
       renderHeader();
@@ -429,11 +499,12 @@ export default function NotificationPage() {
       addSectionTitle("Package & Travel Dates");
       addInlineKV("Package", booking.package_name ?? "-");
       addInlineKV("Pickup Date", fmtDate(booking.dates?.pickup_date));
-      addInlineKV("Pickup Time", booking.dates?.pickup_time ?? "-");
+      addInlineKV("Pickup Time", formatTime(booking.dates?.pickup_time));
       addInlineKV("Pickup Location", booking.dates?.pickup_location ?? "-");
       addInlineKV("Drop Date", fmtDate(booking.dates?.drop_date));
-      addInlineKV("Drop Time", booking.dates?.drop_time ?? "-");
+      addInlineKV("Drop Time", formatTime(booking.dates?.drop_time));
       addInlineKV("Drop Location", booking.dates?.drop_location ?? "-");
+
 
       addSectionTitle("Guests");
       addInlineKV("Adults", booking.guests?.adults_total ?? 0);
@@ -626,14 +697,14 @@ export default function NotificationPage() {
 
       addSectionTitle("Outbound Journey");
       addInlineKV("Pickup Date", fmtDate(booking.dates?.outbound?.pickup_date));
-      addInlineKV("Departure Time", fmtDateTime(booking.dates?.outbound?.departureTime));
-      addInlineKV("Arrival Time", fmtDateTime(booking.dates?.outbound?.arrivalTime));
+      addInlineKV("Departure Time", formatTime(booking.dates?.outbound?.departureTime));
+      addInlineKV("Arrival Time", formatTime(booking.dates?.outbound?.arrivalTime));
       addInlineKV("Flight", booking.dates?.outbound?.flight ?? "-");
 
       addSectionTitle("Return Journey");
       addInlineKV("Drop Date", fmtDate(booking.dates?.return?.drop_date));
-      addInlineKV("Departure Time", fmtDateTime(booking.dates?.return?.departureTime));
-      addInlineKV("Arrival Time", fmtDateTime(booking.dates?.return?.arrivalTime));
+      addInlineKV("Departure Time", formatTime(booking.dates?.return?.departureTime));
+      addInlineKV("Arrival Time", formatTime(booking.dates?.return?.arrivalTime));
       addInlineKV("Flight", booking.dates?.return?.flight ?? "-");
 
       addSectionTitle("Travelers");
@@ -662,7 +733,7 @@ export default function NotificationPage() {
 
       // Itineraries from defaultPackages
       const pkg = defaultPackages?.find((p) => String(p._id) === String(booking.package_id));
-      console.log(pkg)
+
       if (pkg && Array.isArray(pkg.itineraries) && pkg.itineraries.length) {
         addSectionTitle("Itinerary");
         for (const it of pkg.itineraries) {
@@ -736,33 +807,17 @@ export default function NotificationPage() {
 
   // ---------------- UI ----------------
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="min-h-screen bg-background">
       <Header />
       <div className="bg-white shadow-sm py-8 px-6">
         {/* Toggle */}
-        <div className="max-w-3xl flex items-center justify-start gap-3 mb-6">
-          <div className="inline-flex rounded-lg bg-gray-100 p-1">
-            <button
-              onClick={() => setSelection("notification")}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${selection === "notification" ? "bg-white shadow-sm text-gray-900" : "text-gray-600"}`}
-            >
-              Notifications
-            </button>
-            <button
-              onClick={() => setSelection("booking")}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${selection === "booking" ? "bg-white shadow-sm text-gray-900" : "text-gray-600"}`}
-            >
-              Bookings
-            </button>
-          </div>
-        </div>
 
-        {selection === "notification" ? (
-          <>
+
+          <div>
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h1 className="text-2xl font-semibold text-gray-900">Notifications</h1>
-                <p className="text-gray-600 mt-1">You have {notifications?.length ?? 0} new notifications.</p>
+                <p className="text-gray-600 mt-1">You have {notifications?.length ?? 0} notifications.</p>
               </div>
               <div className="p-2 bg-gray-100 rounded-lg">
                 <Bell className="w-6 h-6 text-gray-600" />
@@ -835,37 +890,8 @@ export default function NotificationPage() {
                 </CardContent>
               </Card>
             )}
-          </>
-        ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <EyeIcon className="w-5 h-5 text-primary" />
-                Booking Details
-              </CardTitle>
-            </CardHeader>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
-              {bookings?.map((booking) => {
-                return ((booking?.source || "").toString().toLowerCase() === "booking") ? (
-                  DisplayBooking(booking)
-                ) : (
-                  DisplayDefaultBooking(booking)
-                );
-              })}
-
-              {(!bookings || bookings.length === 0) && (
-                <div className="col-span-1 md:col-span-2">
-                  <CardContent className="p-12 text-center">
-                    <EyeIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No bookings found</h3>
-                    <p className="text-gray-600">When users make bookings, they will appear here with a downloadable PDF.</p>
-                  </CardContent>
-                </div>
-              )}
-            </div>
-          </Card>
-        )}
-
+          </div>
+       
         {/* Preview Modal */}
         {previewBooking && (
           <div className="fixed inset-0 z-50 flex items-center justify-center">

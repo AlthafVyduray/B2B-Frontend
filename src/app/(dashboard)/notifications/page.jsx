@@ -9,7 +9,6 @@ import { Badge } from "@/components/ui/badge"
 import {
   Bell,
   Plus,
-  Search,
   Filter,
   AlertTriangle,
   Info,
@@ -29,15 +28,34 @@ export default function NotificationsPage() {
   const [filterType, setFilterType] = useState("")
   const [filterStatus, setFilterStatus] = useState("")
 
-  const { notifications, loadNotifications, deleteNotification, getNotifications, notificationStats, notificationPagination } = useAdminStore();
+  const { notifications, loadNotifications, deleteNotification, getNotifications, notificationStats,
+  notificationPagination = {page: 1, totalPages: 1, limit: 10, totalRecords: 0,} } = useAdminStore();
   const [notificationToDelete, setNotificationToDelete] = useState(null);
   const [notificationToCreate, setNotificationToCreate] = useState(false)
 
 
+  const [page, setPage] = useState(notificationPagination.page || 1);
+  const [limit, setLimit] = useState(notificationPagination.limit || 10);
+  
+
   useEffect(() => {
-    getNotifications({ filterType, filterStatus, page: notificationPagination.page })
-    
-  }, [filterType, filterStatus, notificationPagination.page])
+    if (page === 1) {
+    getNotifications({ filterType, filterStatus, page, limit });
+      
+    } else {
+      setPage(1);
+    } 
+  }, [filterType, filterStatus]);
+      
+    // fetch bookings on mount
+    useEffect(() => {
+      if (typeof getNotifications === "function") {
+        getNotifications({ filterType, filterStatus, page, limit });
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [filterType, filterStatus, page, limit]);
+  
+ 
 
   const [notification, setNotification] = useState({
     title: "",
@@ -66,75 +84,7 @@ export default function NotificationsPage() {
     setNotificationToCreate(false)
   };
 
-  // // Sample notifications data
-  // const notifications = [
-  //   {
-  //     id: 1,
-  //     type: "system",
-  //     priority: "high",
-  //     title: "Server Maintenance Scheduled",
-  //     message: "Server maintenance scheduled for tonight. Expected downtime: 2-4 hours.",
-  //     timestamp: "2025-08-09T07:56:21.563Z",
-  //     status: "active",
-  //     recipient: "All Users",
-  //     category: "System",
-  //   },
-  //   {
-  //     id: 2,
-  //     type: "error",
-  //     priority: "critical",
-  //     title: "Server Error Detected",
-  //     message: "Critical server error detected in booking system. Immediate attention required.",
-  //     timestamp: "2025-08-09T06:30:15.123Z",
-  //     status: "active",
-  //     recipient: "Admin Team",
-  //     category: "Error",
-  //   },
-  //   {
-  //     id: 3,
-  //     type: "info",
-  //     priority: "medium",
-  //     title: "New Booking Received",
-  //     message: "New booking received for Goa package. Customer: John Doe",
-  //     timestamp: "2025-08-09T05:45:30.789Z",
-  //     status: "read",
-  //     recipient: "Sales Team",
-  //     category: "Booking",
-  //   },
-  //   {
-  //     id: 4,
-  //     type: "success",
-  //     priority: "low",
-  //     title: "Payment Confirmed",
-  //     message: "Payment of ₹24,035 confirmed for booking #68b7cdcb6bb8c",
-  //     timestamp: "2025-08-09T04:20:45.456Z",
-  //     status: "read",
-  //     recipient: "Finance Team",
-  //     category: "Payment",
-  //   },
-  //   {
-  //     id: 5,
-  //     type: "warning",
-  //     priority: "medium",
-  //     title: "Agent Verification Pending",
-  //     message: "New agent registration requires verification. Agent: Sarah Wilson",
-  //     timestamp: "2025-08-09T03:15:20.234Z",
-  //     status: "active",
-  //     recipient: "HR Team",
-  //     category: "Agent",
-  //   },
-  //   {
-  //     id: 6,
-  //     type: "info",
-  //     priority: "low",
-  //     title: "Weekly Report Generated",
-  //     message: "Weekly performance report has been generated and is ready for review.",
-  //     timestamp: "2025-08-09T02:00:00.000Z",
-  //     status: "read",
-  //     recipient: "Management",
-  //     category: "Report",
-  //   },
-  // ]
+ 
 
   const getTypeIcon = (type) => {
     switch (type) {
@@ -145,26 +95,11 @@ export default function NotificationsPage() {
       case "system":
         return <Settings className="h-5 w-5 text-blue-500" />
       case "cancel":
-        return <XCircle className="h-5 w-5 text-red-500" /> // ❌ Cancel icon
+        return <XCircle className="h-5 w-5 text-red-500" />
       default:
         return null
     }
   }
-
-  // const getPriorityColor = (priority) => {
-  //   switch (priority) {
-  //     case "critical":
-  //       return "bg-red-100 text-red-800 border-red-200"
-  //     case "high":
-  //       return "bg-orange-100 text-orange-800 border-orange-200"
-  //     case "medium":
-  //       return "bg-yellow-100 text-yellow-800 border-yellow-200"
-  //     case "low":
-  //       return "bg-green-100 text-green-800 border-green-200"
-  //     default:
-  //       return "bg-gray-100 text-gray-800 border-gray-200"
-  //   }
-  // }
 
   const formatTimestamp = (timestamp) => {
     const date = new Date(timestamp)
@@ -177,22 +112,7 @@ export default function NotificationsPage() {
     })
   }
 
-  // const filteredNotifications = notifications.filter((notification) => {
-  //   const matchesSearch =
-  //     notification.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  //     notification.message?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  //     notification.category?.toLowerCase().includes(searchTerm.toLowerCase())
-  //   const matchesType = filterType === "all" || notification.type === filterType
-  //   const matchesStatus = filterStatus === "all" || notification.status === filterStatus
-  //   return matchesSearch && matchesType && matchesStatus
-  // })
 
-  // const stats = {
-  //   total: notifications.length,
-  //   active: notifications.filter((n) => n.status === "active").length,
-  //   critical: notifications.filter((n) => n.priority === "critical").length,
-  //   unread: notifications.filter((n) => n.status === "active").length,
-  // }
 
   return (
     <div className="lg:p-6 p-3 space-y-6 lg:mt-0 mt-10 m-2 bg-background">
@@ -233,8 +153,8 @@ export default function NotificationsPage() {
                   <p className="text-sm font-medium text-gray-600">System Notifications</p>
                   <p className="text-2xl font-bold text-gray-900">{notificationStats.system}</p>
                 </div>
-                <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <CheckCircle className="h-6 w-6 text-green-600" />
+                <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <Settings className="h-6 w-6  text-blue-500" />
                 </div>
               </div>
             </CardContent>
@@ -247,8 +167,8 @@ export default function NotificationsPage() {
                   <p className="text-sm font-medium text-gray-600">Booking Notifications</p>
                   <p className="text-2xl font-bold text-gray-900">{notificationStats.booking}</p>
                 </div>
-                <div className="h-12 w-12 bg-red-100 rounded-lg flex items-center justify-center">
-                  <AlertTriangle className="h-6 w-6 text-red-600" />
+                <div className="h-12 w-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                  <AlertTriangle className="h-6 w-6 text-yellow-500" />
                 </div>
               </div>
             </CardContent>
@@ -262,8 +182,8 @@ export default function NotificationsPage() {
                     Success Notifications</p>
                   <p className="text-2xl font-bold text-gray-900">{notificationStats.success}</p>
                 </div>
-                <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                  <Eye className="h-6 w-6 text-purple-600" />
+                <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
+                  <CheckCircle className="h-6 w-6 text-green-500" />
                 </div>
               </div>
             </CardContent>
@@ -367,63 +287,45 @@ export default function NotificationsPage() {
             <Button
               variant="outline"
               size="sm"
-              disabled={notificationPagination.page === 1}
-              onClick={() =>
-                getNotifications({
-                  filterType,
-                  filterStatus,
-                  page: notificationPagination.page - 1,
-                })
-              }
+              disabled={page === 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
             >
               Prev
             </Button>
 
             {/* Page Numbers with dots */}
-            {Array.from(
-              { length: notificationPagination.totalPages },
-              (_, i) => i + 1
+            {Array.from({ length: notificationPagination.totalPages || 1 }, (_, i) => i + 1)
+            .filter(
+              (p) =>
+                p === 1 ||
+                p === notificationPagination.totalPages ||
+                (p >= page - 1 && p <= page + 1)
             )
-              .filter(
-                (p) =>
-                  p === 1 ||
-                  p === notificationPagination.totalPages ||
-                  (p >= notificationPagination.page - 1 &&
-                    p <= notificationPagination.page + 1)
-              )
-              .map((p, idx, arr) => {
-                const prevPage = arr[idx - 1];
-                const showDots = prevPage && p - prevPage > 1;
-                return (
-                  <React.Fragment key={p}>
-                    {showDots && <span className="px-2">...</span>}
-                    <Button
-                      variant={
-                        notificationPagination.page === p ? "default" : "outline"
-                      }
-                      size="sm"
-                      onClick={() =>
-                        getNotifications({ filterType, filterStatus, page: p })
-                      }
-                    >
-                      {p}
-                    </Button>
-                  </React.Fragment>
-                );
-              })}
+            .map((p, idx, arr) => {
+              const prev = arr[idx - 1];
+              const showDots = prev && p - prev > 1;
+
+              return (
+                <React.Fragment key={p}>
+                  {showDots && <span className="px-2">...</span>}
+                  <Button
+                    variant={page === p ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setPage(p)}
+                  >
+                    {p}
+                  </Button>
+                </React.Fragment>
+              );
+            })}
+            
 
             {/* Next */}
             <Button
               variant="outline"
               size="sm"
-              disabled={notificationPagination.page === notificationPagination.totalPages}
-              onClick={() =>
-                getNotifications({
-                  filterType,
-                  filterStatus,
-                  page: notificationPagination.page + 1,
-                })
-              }
+              disabled={page === notificationPagination.totalPages || 1}
+              onClick={() => setPage((p) => Math.min(notificationPagination.totalPages || 1, p + 1))}
             >
               Next
             </Button>

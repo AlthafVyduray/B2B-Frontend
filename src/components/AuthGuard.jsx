@@ -14,7 +14,7 @@ export default function AuthGuard({ children }) {
 
   const PUBLIC_ALLOW = ["/", "/signup", "/login", "/forgot-password", "/reset-password"]
   const ADMIN_ALLOW = ["/", "/dashboard", "/bookings", "/vehicles", "/agents", "/users", "/notifications", "/packages", "/hotels", "/pricing", "/settings"]
-  const AGENT_ALLOW = ["/", "/notification", "/edit-profile", "/booking"]
+  const AGENT_ALLOW = ["/", "/notification", "/edit-profile", "/booking", "/my-bookings"]
 
   const normalize = (p) => {
     if (!p) return "/"
@@ -71,7 +71,7 @@ export default function AuthGuard({ children }) {
     }
 
     // logged in: role-based checks
-    if (user.role === "Admin") {
+    if (user.role === "Admin" || user.role ==="Super Admin") {
       shouldAllow = isPathAllowed(ADMIN_ALLOW)
       if (!shouldAllow) {
         setAllowed(false)

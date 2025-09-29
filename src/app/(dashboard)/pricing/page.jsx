@@ -199,7 +199,7 @@ export default function PricingPage() {
       setIsUpdating(false);
     }
   };
-  console.log(pricing)
+
 
   const safePricing = Array.isArray(pricing) ? pricing.filter(Boolean) : [];
   const safePackages = Array.isArray(packages) ? packages.filter(Boolean) : [];

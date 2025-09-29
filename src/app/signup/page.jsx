@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import useAuthStore from "@/stores/useAuthStore";
+import { indianStates } from "@/constants/indianStates";
+import { useRouter } from "next/navigation";
 
 export default function AuthPage() {
+    const router = useRouter();
     const [formData, setFormData] = useState({
       fullName: "",
       email: "",
@@ -74,6 +76,8 @@ export default function AuthPage() {
             state: "", fullAddress: "", password: ""
             });
             setErrors({});
+            router.push("/signin");
+
         }catch (error) {
             setIsSignUp(false);
         } finally {
@@ -172,10 +176,20 @@ export default function AuthPage() {
                     </div>
                     <div className="grid grid-cols-2 gap-5">
                         <div>
-
-                            <input type="text" name="state" id="state" placeholder="State" value={formData.state} onChange={handleChange}
-                                className="w-full text-black placeholder:text-[#000000b8] px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black"
-                            />
+                            <select
+                                name="state"
+                                id="state"
+                                value={formData.state}
+                                onChange={handleChange}
+                                className="w-full text-black px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                            >
+                                <option value="" disabled>Select State</option>
+                                {indianStates.map((state, index) => (
+                                <option key={index} value={state}>
+                                    {state}
+                                </option>
+                                ))}
+                            </select>
                         </div>
                         <div>
 
