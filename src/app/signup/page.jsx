@@ -92,7 +92,7 @@ export default function AuthPage() {
             {/* Right Section */}
             <div className="hidden lg:flex w-1/2 relative">
                 <img
-                    src="/images/1.jpg"
+                    src="/images/3.jpg"
                     alt="Travel"
                     className="w-full h-full object-cover"
                 />

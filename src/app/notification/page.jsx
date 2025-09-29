@@ -805,6 +805,15 @@ export default function NotificationPage() {
     }
   };
 
+  //state for filtering
+  const [filterType, setFilterType] = useState("all");
+
+  const filteredNotifications = notifications?.filter((n) => 
+    filterType === "all" ? true : n.type === filterType
+  );
+
+
+
   // ---------------- UI ----------------
   return (
     <div className="min-h-screen bg-background">
@@ -814,18 +823,38 @@ export default function NotificationPage() {
 
 
           <div>
+            
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h1 className="text-2xl font-semibold text-gray-900">Notifications</h1>
-                <p className="text-gray-600 mt-1">You have {notifications?.length ?? 0} notifications.</p>
+                <p className="text-gray-600 mt-1">
+                  You have {notifications?.length ?? 0} notifications.
+                </p>
               </div>
-              <div className="p-2 bg-gray-100 rounded-lg">
-                <Bell className="w-6 h-6 text-gray-600" />
+
+              <div className="flex items-center gap-4">
+                {/* Filter Dropdown */}
+                <select
+                  value={filterType}
+                  onChange={(e) => setFilterType(e.target.value)}
+                  className="border rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="all">All</option>
+                  <option value="booking">Booking</option>
+                  <option value="success">Success</option>
+                  <option value="system">System</option>
+                  <option value="cancel">Cancel</option>
+                </select>
+
+                <div className="p-2 bg-gray-100 rounded-lg">
+                  <Bell className="w-6 h-6 text-gray-600" />
+                </div>
               </div>
             </div>
 
+
             <div className="space-y-4">
-              {notifications?.map((notification) => (
+              {filteredNotifications?.map((notification) => (
                 <Card
                   key={notification._id}
                   className={`transition-all overflow-auto px-2 hover:shadow-md border-l-4
@@ -881,7 +910,7 @@ export default function NotificationPage() {
               ))}
             </div>
 
-            {(!notifications || notifications.length === 0) && (
+            {(!filteredNotifications || filteredNotifications.length === 0) && (
               <Card>
                 <CardContent className="p-12 text-center">
                   <Bell className="h-12 w-12 text-gray-400 mx-auto mb-4" />
