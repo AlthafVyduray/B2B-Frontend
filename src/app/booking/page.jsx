@@ -241,7 +241,7 @@ export default function TravelBookingApp() {
 
       // success
       resetForm();
-      router.push("/notification")
+      router.push("/my-bookings")
     } catch (error) {
       console.error("Failed to create booking:", error);
       // show user-friendly error UI here if you have one
@@ -424,7 +424,7 @@ export default function TravelBookingApp() {
 
       // success
       resetDefaultForm()
-      router.push("/notification")
+      router.push("/my-bookings")
     } catch (error) {
       console.error("Failed to create booking:", error);
       // show user-friendly error UI here if you have one

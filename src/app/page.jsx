@@ -24,10 +24,7 @@ export default function TravelHeroComponent() {
           
           {/* User Icon */}
           <div className='absolute top-4 right-4 lg:top-0 lg:right-0 flex'>
-            <Link href={"/signup"} className="px-3 py-2 flex justify-center items-center">
-              <Bell className='text-black w-6 h-6' />
-            </Link>
-            <Link href={"/signup"} className="px-3 py-2 flex justify-center items-center">
+            <Link href={"/login"} className="px-3 py-2 flex justify-center items-center">
               <User className='text-black w-6 h-6' />
             </Link>
           </div>

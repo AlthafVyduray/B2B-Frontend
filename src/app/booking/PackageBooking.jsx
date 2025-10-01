@@ -75,7 +75,7 @@ const PackageBooking = ({ selectedPackage, setSelectedPackage, defaultPackage, s
   
     
   return (
-    <Card className="max-h-[800px]">
+    <Card className="max-h-[900px]">
         <CardHeader>
             <CardTitle>Travel Details</CardTitle>
         </CardHeader>

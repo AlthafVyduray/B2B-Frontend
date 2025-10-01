@@ -3,7 +3,7 @@ import { PackageIcon } from "lucide-react"
 
 const PackagePreview = ({selectedPackage}) => {
   return (
-    <Card className="max-h-[800px]">
+    <Card className="max-h-[750px]">
         <CardHeader>
             <CardTitle className="flex items-center gap-2">
             <PackageIcon className="w-5 h-5 text-primary" />

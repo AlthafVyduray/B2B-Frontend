@@ -53,11 +53,11 @@ export default function HotelsPage() {
     details: "",
     starRating: "",
     pricing: {
-      cpPrice: "",
-      apPrice: "",
-      mapPrice: "",
-      roomPrice: "",
-      extraBedPrice: "",
+      cpPrice: 0,
+      apPrice: 0,
+      mapPrice: 0,
+      roomPrice: 0,
+      extraBedPrice: 0,
     },
   };
 
@@ -210,20 +210,29 @@ export default function HotelsPage() {
       }
     }
 
-    // Pricing validations
+    // Pricing validations (all required + non-negative)
     const pricingFields = ["cpPrice", "apPrice", "mapPrice", "roomPrice", "extraBedPrice"];
     pricingFields.forEach((field) => {
-      const value = Number(formData.pricing?.[field]);
-      if (field === "roomPrice" && (!formData.pricing?.[field] && formData.pricing?.[field] !== 0)) {
-        e[field] = "Room price is required";
-      } else if (value < 0 || Number.isNaN(value)) {
-        e[field] = `${field} cannot be negative`;
+      const value = formData.pricing?.[field];
+
+      // Required check
+      if (value === undefined || value === null || value === "") {
+        e[field] = `${field} is required`;
+        return;
+      }
+
+      const num = Number(value);
+
+      // Invalid or negative check
+      if (Number.isNaN(num) || num < 0) {
+        e[field] = `${field} must be a non-negative number`;
       }
     });
 
     setErrors(e);
     return Object.keys(e).length === 0;
   };
+
 
   //validation for update form
   // const validateHotelUpdate = (formData) => {
