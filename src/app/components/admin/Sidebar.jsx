@@ -21,19 +21,19 @@ export default function Sidebar({ active }) {
   const pathname = usePathname()
 
     
-  const [isOpen, setIsOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(false);
 
   const items = [
-    { icon: <Home size={18} />, label: "Dashboard", path: "/dashboard" },          // Home / main dashboard
-    { icon: <User size={18} />, label: "Agents", path: "/agents" },                // User icon for agents
-    { icon: <Bell size={18} />, label: "bookings", path: "/bookings" },           // Bell for notifications/bookings
-    { icon: <Users size={18} />, label: "Users", path: "/users" },                 // Users icon for all users
-    { icon: <Bell size={18} />, label: "Notifications", path: "/notifications" },  // Bell for alerts
-    { icon: <Package size={18} />, label: "Packages", path: "/packages" },         // Package icon
-    { icon: <CarFront size={18} />, label: "Vehicles", path: "/vehicles" },        // Car icon
-    { icon: <Hotel size={18} />, label: "Hotels", path: "/hotels" },               // Hotel icon
-    { icon: <span className="text-lg font-semibold">₹</span>, label: "Pricing", path: "/pricing" },  
-    { icon: <Settings size={18} />, label: "Settings", path: "/settings" },        // Gear for settings
+    { icon: <Home size={18} />, label: "Dashboard", path: "/dashboard/" },          // Home / main dashboard
+    { icon: <User size={18} />, label: "Agents", path: "/agents/" },                // User icon for agents
+    { icon: <Bell size={18} />, label: "bookings", path: "/bookings/" },           // Bell for notifications/bookings
+    { icon: <Users size={18} />, label: "Users", path: "/users/" },                 // Users icon for all users
+    { icon: <Bell size={18} />, label: "Notifications", path: "/notifications/" },  // Bell for alerts
+    { icon: <Package size={18} />, label: "Packages", path: "/packages/" },         // Package icon
+    { icon: <CarFront size={18} />, label: "Vehicles", path: "/vehicles/" },        // Car icon
+    { icon: <Hotel size={18} />, label: "Hotels", path: "/hotels/" },               // Hotel icon
+    { icon: <span className="text-lg font-semibold">₹</span>, label: "Pricing", path: "/pricing/" },  
+    { icon: <Settings size={18} />, label: "Settings", path: "/settings/" },        // Gear for settings
   ];
 
   return (

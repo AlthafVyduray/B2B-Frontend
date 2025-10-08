@@ -34,7 +34,7 @@ export default function TravelHeroComponent() {
 
           {/* Content */}
           <div className='absolute  bottom-10 left-1/2 -translate-x-1/2 lg:translate-x-0 lg:left-2/3 lg:right-20 lg:top-1/2 w-[90%] sm:w-[80%] lg:w-auto flex justify-center lg:justify-end'>
-            <div className="bg-white/90 lg:bg-transparent p-6 sm:p-8 lg:p-0 rounded-xl lg:rounded-none shadow-lg lg:shadow-none text-white text-center lg:text-left">
+            <div className="bg-transparent p-6 sm:p-8 lg:p-0 rounded-xl lg:rounded-none lg:shadow-none text-white text-center lg:text-left">
               
               <h3 className="text-2xl sm:text-3xl md:text-5xl lg:text-5xl font-extrabold tracking-tight">
                 EXPLORE WITH
