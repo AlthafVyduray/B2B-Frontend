@@ -87,8 +87,10 @@ export default function NotificationPage() {
     setDownloading(true);
     try {
       if (((previewBooking?.source || "").toString().toLowerCase() === "booking")) {
+        console.log(packages, previewBooking)
         await generatePdf(previewBooking, packages, hotels);
       } else {
+        console.log(defaultPackages, previewBooking)
         await generateDefaultPackagePdf(previewBooking, defaultPackages, hotels);
       }
     } catch (err) {
@@ -241,9 +243,9 @@ export default function NotificationPage() {
 
               <div className="p-6">
                 {((previewBooking?.source || "").toString().toLowerCase() === "booking") ? (
-                  DisplayBooking(previewBooking)
+                  DisplayBooking(previewBooking, packages, hotels)
                 ) : (
-                  DisplayDefaultBooking(previewBooking)
+                  DisplayDefaultBooking(previewBooking, defaultPackages)
                 )}
               </div>
 

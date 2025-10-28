@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import React, { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { axiosInstance } from "@/lib/axios";
@@ -38,7 +38,11 @@ const combineDateTimeToISO = (dateStr, timeStr) => {
 const cloneDeep = (obj) => JSON.parse(JSON.stringify(obj || {}));
 
 // ---------- Component ----------
-export default function DefaultPackageBookingEditModal({ editedBooking, setEditedBooking, updateDefaultBooking}) {
+export default function DefaultPackageBookingEditModal({
+  editedBooking,
+  setEditedBooking,
+  updateDefaultBooking,
+}) {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
@@ -47,6 +51,7 @@ export default function DefaultPackageBookingEditModal({ editedBooking, setEdite
   const defaultForm = {
     // read-only
     contact: { name: "", email: "", mobile_number: "", state: "" },
+    client_contact: { name: "", email: "", phone: "" },
     package_id: "",
     package_name: "",
 
@@ -72,7 +77,6 @@ export default function DefaultPackageBookingEditModal({ editedBooking, setEdite
     agent_commission: 0,
     base_total: "",
     total_amount: "",
-
   };
 
   const [form, setForm] = useState(defaultForm);
@@ -95,18 +99,30 @@ export default function DefaultPackageBookingEditModal({ editedBooking, setEdite
 
     const data = cloneDeep(editedBooking);
     setForm({
-      contact: data.contact || { name: "", email: "", mobile_number: "", state: "" },
+      contact: data.contact || {
+        name: "",
+        email: "",
+        mobile_number: "",
+        state: "",
+      },
+      client_contact: data.client_contact || { name: "", email: "", phone: "" },
       package_id: data.package_id || "",
       package_name: data.package_name || "",
 
       // outbound
-      outbound_pickup_date: formatDateLocal(data.dates?.outbound?.pickup_date || data.dates?.outbound?.pickup_date), // keep if already date-string
-      outbound_departure_time: formatTimeLocal(data.dates?.outbound?.departureTime),
+      outbound_pickup_date: formatDateLocal(
+        data.dates?.outbound?.pickup_date || data.dates?.outbound?.pickup_date
+      ), // keep if already date-string
+      outbound_departure_time: formatTimeLocal(
+        data.dates?.outbound?.departureTime
+      ),
       outbound_arrival_time: formatTimeLocal(data.dates?.outbound?.arrivalTime),
       outbound_flight: data.dates?.outbound?.flight || "",
 
       // return
-      return_drop_date: formatDateLocal(data.dates?.return?.drop_date || data.dates?.return?.drop_date),
+      return_drop_date: formatDateLocal(
+        data.dates?.return?.drop_date || data.dates?.return?.drop_date
+      ),
       return_departure_time: formatTimeLocal(data.dates?.return?.departureTime),
       return_arrival_time: formatTimeLocal(data.dates?.return?.arrivalTime),
       return_flight: data.dates?.return?.flight || "",
@@ -137,11 +153,16 @@ export default function DefaultPackageBookingEditModal({ editedBooking, setEdite
 
   const validate = () => {
     const e = {};
-    if (!form.adults_total || Number(form.adults_total) < 1) e.adults_total = "At least 1 adult is required";
-    if (form.base_total === "" || Number.isNaN(Number(form.base_total))) e.base_total = "Base total required";
-    if (form.total_amount === "" || Number.isNaN(Number(form.total_amount))) e.total_amount = "Total amount required";
-    if (!form.outbound_pickup_date) e.outbound_pickup_date = "Pickup date required";
-    if (!form.return_drop_date) e.return_drop_date = "Return/drop date required";
+    if (!form.adults_total || Number(form.adults_total) < 1)
+      e.adults_total = "At least 1 adult is required";
+    if (form.base_total === "" || Number.isNaN(Number(form.base_total)))
+      e.base_total = "Base total required";
+    if (form.total_amount === "" || Number.isNaN(Number(form.total_amount)))
+      e.total_amount = "Total amount required";
+    if (!form.outbound_pickup_date)
+      e.outbound_pickup_date = "Pickup date required";
+    if (!form.return_drop_date)
+      e.return_drop_date = "Return/drop date required";
 
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -165,26 +186,40 @@ export default function DefaultPackageBookingEditModal({ editedBooking, setEdite
       outbound.pickup_date = formValues.outbound_pickup_date;
     }
     // outbound times only if both date & time present
-    const outDepISO = combineDateTimeToISO(formValues.outbound_pickup_date, formValues.outbound_departure_time);
+    const outDepISO = combineDateTimeToISO(
+      formValues.outbound_pickup_date,
+      formValues.outbound_departure_time
+    );
     if (outDepISO) outbound.departureTime = outDepISO;
-    const outArrISO = combineDateTimeToISO(formValues.outbound_pickup_date, formValues.outbound_arrival_time);
+    const outArrISO = combineDateTimeToISO(
+      formValues.outbound_pickup_date,
+      formValues.outbound_arrival_time
+    );
     if (outArrISO) outbound.arrivalTime = outArrISO;
 
     if (typeof formValues.outbound_flight === "string") {
       // only include if non-empty (or include empty to explicitly clear)
-      if (formValues.outbound_flight.trim() !== "") outbound.flight = formValues.outbound_flight.trim();
+      if (formValues.outbound_flight.trim() !== "")
+        outbound.flight = formValues.outbound_flight.trim();
     }
 
     // return date-only
     if (formValues.return_drop_date) {
       ret.drop_date = formValues.return_drop_date;
     }
-    const retDepISO = combineDateTimeToISO(formValues.return_drop_date, formValues.return_departure_time);
+    const retDepISO = combineDateTimeToISO(
+      formValues.return_drop_date,
+      formValues.return_departure_time
+    );
     if (retDepISO) ret.departureTime = retDepISO;
-    const retArrISO = combineDateTimeToISO(formValues.return_drop_date, formValues.return_arrival_time);
+    const retArrISO = combineDateTimeToISO(
+      formValues.return_drop_date,
+      formValues.return_arrival_time
+    );
     if (retArrISO) ret.arrivalTime = retArrISO;
     if (typeof formValues.return_flight === "string") {
-      if (formValues.return_flight.trim() !== "") ret.flight = formValues.return_flight.trim();
+      if (formValues.return_flight.trim() !== "")
+        ret.flight = formValues.return_flight.trim();
     }
 
     if (Object.keys(outbound).length) dates.outbound = outbound;
@@ -194,15 +229,27 @@ export default function DefaultPackageBookingEditModal({ editedBooking, setEdite
     // Guests: include only when user provided (non-empty) values OR value differs from original
     const guests = {};
     const origGuests = original?.guests || {};
-    if (formValues.adults_total !== undefined && formValues.adults_total !== "") {
-      if (Number(formValues.adults_total) !== Number(origGuests.adults_total)) guests.adults_total = Number(formValues.adults_total);
+    if (
+      formValues.adults_total !== undefined &&
+      formValues.adults_total !== ""
+    ) {
+      if (Number(formValues.adults_total) !== Number(origGuests.adults_total))
+        guests.adults_total = Number(formValues.adults_total);
       else guests.adults_total = Number(formValues.adults_total); // optional: always include if provided
     }
-    if (formValues.children_with_bed !== undefined && formValues.children_with_bed !== "") {
+    if (
+      formValues.children_with_bed !== undefined &&
+      formValues.children_with_bed !== ""
+    ) {
       guests.children_with_bed = Number(formValues.children_with_bed || 0);
     }
-    if (formValues.children_without_bed !== undefined && formValues.children_without_bed !== "") {
-      guests.children_without_bed = Number(formValues.children_without_bed || 0);
+    if (
+      formValues.children_without_bed !== undefined &&
+      formValues.children_without_bed !== ""
+    ) {
+      guests.children_without_bed = Number(
+        formValues.children_without_bed || 0
+      );
     }
     if (formValues.infants !== undefined && formValues.infants !== "") {
       guests.infants = Number(formValues.infants || 0);
@@ -212,13 +259,19 @@ export default function DefaultPackageBookingEditModal({ editedBooking, setEdite
     // Pricing
     const pricing = {};
     const origPricing = original?.pricing || {};
-    if (formValues.agent_commission !== undefined && !(formValues.agent_commission === "")) {
+    if (
+      formValues.agent_commission !== undefined &&
+      !(formValues.agent_commission === "")
+    ) {
       pricing.agent_commission = Number(formValues.agent_commission || 0);
     }
     if (formValues.base_total !== undefined && formValues.base_total !== "") {
       pricing.base_total = Number(formValues.base_total);
     }
-    if (formValues.total_amount !== undefined && formValues.total_amount !== "") {
+    if (
+      formValues.total_amount !== undefined &&
+      formValues.total_amount !== ""
+    ) {
       pricing.total_amount = Number(formValues.total_amount);
     }
     if (Object.keys(pricing).length) payload.pricing = pricing;
@@ -251,9 +304,8 @@ export default function DefaultPackageBookingEditModal({ editedBooking, setEdite
         return;
       }
 
-
       // Use PATCH for partial update - change to PUT if your server only supports PUT (but be cautious)
-      await updateDefaultBooking(editedBooking._id, payload)
+      await updateDefaultBooking(editedBooking._id, payload);
 
       // success: reset and close
       setForm(defaultForm);
@@ -286,7 +338,9 @@ export default function DefaultPackageBookingEditModal({ editedBooking, setEdite
       <div className="bg-white w-full max-w-3xl rounded-lg shadow-xl relative overflow-y-auto max-h-[90vh] border border-gray-200">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 bg-gray-100 border-b">
-          <h3 className="text-xl font-semibold">Edit Default Package Booking</h3>
+          <h3 className="text-xl font-semibold">
+            Edit Default Package Booking
+          </h3>
           <button
             onClick={() => closeModal()}
             aria-label="Close"
@@ -296,36 +350,100 @@ export default function DefaultPackageBookingEditModal({ editedBooking, setEdite
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6 text-sm text-gray-700">
+        <form
+          onSubmit={handleSubmit}
+          className="p-6 space-y-6 text-sm text-gray-700"
+        >
           {serverErrors?.message && (
-            <div className="text-sm text-red-700 bg-red-100 p-2 rounded">{serverErrors.message}</div>
+            <div className="text-sm text-red-700 bg-red-100 p-2 rounded">
+              {serverErrors.message}
+            </div>
           )}
 
           {/* READ-ONLY: Contact & Package */}
+          <h1>Agent Details</h1>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <label className="flex flex-col">
-              <span className="text-xs font-medium text-gray-600">Customer Name</span>
-              <input value={form.contact?.name || ""} disabled className="border px-3 py-2 rounded bg-gray-50" />
+              <span className="text-xs font-medium text-gray-600">
+                Customer Name
+              </span>
+              <input
+                value={form.contact?.name || ""}
+                disabled
+                className="border px-3 py-2 rounded bg-gray-50"
+              />
             </label>
             <label className="flex flex-col">
               <span className="text-xs font-medium text-gray-600">Email</span>
-              <input value={form.contact?.email || ""} disabled className="border px-3 py-2 rounded bg-gray-50" />
+              <input
+                value={form.contact?.email || ""}
+                disabled
+                className="border px-3 py-2 rounded bg-gray-50"
+              />
             </label>
             <label className="flex flex-col">
               <span className="text-xs font-medium text-gray-600">Mobile</span>
-              <input value={form.contact?.mobile_number || ""} disabled className="border px-3 py-2 rounded bg-gray-50" />
-            </label>
-
-            <label className="flex flex-col">
-              <span className="text-xs font-medium text-gray-600">Package Name</span>
-              <input value={form.package_name || ""} disabled className="border px-3 py-2 rounded bg-gray-50 col-span-2" />
-            </label>
-            <label className="flex flex-col">
-              <span className="text-xs font-medium text-gray-600">Package ID</span>
-              <input value={form.package_id || ""} disabled className="border px-3 py-2 rounded bg-gray-50" />
+              <input
+                value={form.contact?.mobile_number || ""}
+                disabled
+                className="border px-3 py-2 rounded bg-gray-50"
+              />
             </label>
           </div>
 
+          <h1>Client Details</h1>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <label className="flex flex-col">
+              <span className="text-xs font-medium text-gray-600">
+                Client Name
+              </span>
+              <input
+                value={form.client_contact?.name || ""}
+                disabled
+                className="border px-3 py-2 rounded bg-gray-50"
+              />
+            </label>
+            <label className="flex flex-col">
+              <span className="text-xs font-medium text-gray-600">Email</span>
+              <input
+                value={form.client_contact?.email || ""}
+                disabled
+                className="border px-3 py-2 rounded bg-gray-50"
+              />
+            </label>
+            <label className="flex flex-col">
+              <span className="text-xs font-medium text-gray-600">Mobile</span>
+              <input
+                value={form.client_contact?.phone || ""}
+                disabled
+                className="border px-3 py-2 rounded bg-gray-50"
+              />
+            </label>
+          </div>
+
+          <h1>Package Details</h1>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <label className="flex flex-col">
+              <span className="text-xs font-medium text-gray-600">
+                Package Name
+              </span>
+              <input
+                value={form.package_name || ""}
+                disabled
+                className="border px-3 py-2 rounded bg-gray-50 col-span-2"
+              />
+            </label>
+            <label className="flex flex-col">
+              <span className="text-xs font-medium text-gray-600">
+                Package ID
+              </span>
+              <input
+                value={form.package_id || ""}
+                disabled
+                className="border px-3 py-2 rounded bg-gray-50"
+              />
+            </label>
+          </div>
           {/* Outbound */}
           <div>
             <h4 className="text-sm font-semibold mb-2">Outbound (Going)</h4>
@@ -339,7 +457,11 @@ export default function DefaultPackageBookingEditModal({ editedBooking, setEdite
                   onChange={handleChange}
                   className="border rounded px-3 py-2"
                 />
-                {errors.outbound_pickup_date && <p className="text-xs text-red-500">{errors.outbound_pickup_date}</p>}
+                {errors.outbound_pickup_date && (
+                  <p className="text-xs text-red-500">
+                    {errors.outbound_pickup_date}
+                  </p>
+                )}
               </label>
 
               <label className="flex flex-col">
@@ -391,7 +513,11 @@ export default function DefaultPackageBookingEditModal({ editedBooking, setEdite
                   onChange={handleChange}
                   className="border rounded px-3 py-2"
                 />
-                {errors.return_drop_date && <p className="text-xs text-red-500">{errors.return_drop_date}</p>}
+                {errors.return_drop_date && (
+                  <p className="text-xs text-red-500">
+                    {errors.return_drop_date}
+                  </p>
+                )}
               </label>
 
               <label className="flex flex-col">
@@ -440,30 +566,42 @@ export default function DefaultPackageBookingEditModal({ editedBooking, setEdite
                   type="number"
                   min="1"
                   value={form.adults_total}
-                  onChange={(e) => handleGuestChange("adults_total", e.target.value)}
+                  onChange={(e) =>
+                    handleGuestChange("adults_total", e.target.value)
+                  }
                   className="border rounded px-3 py-2"
                 />
-                {errors.adults_total && <p className="text-xs text-red-500">{errors.adults_total}</p>}
+                {errors.adults_total && (
+                  <p className="text-xs text-red-500">{errors.adults_total}</p>
+                )}
               </label>
 
               <label className="flex flex-col">
-                <span className="text-xs text-gray-600">Children (with bed)</span>
+                <span className="text-xs text-gray-600">
+                  Children (with bed)
+                </span>
                 <input
                   type="number"
                   min="0"
                   value={form.children_with_bed}
-                  onChange={(e) => handleGuestChange("children_with_bed", e.target.value)}
+                  onChange={(e) =>
+                    handleGuestChange("children_with_bed", e.target.value)
+                  }
                   className="border rounded px-3 py-2"
                 />
               </label>
 
               <label className="flex flex-col">
-                <span className="text-xs text-gray-600">Children (without bed)</span>
+                <span className="text-xs text-gray-600">
+                  Children (without bed)
+                </span>
                 <input
                   type="number"
                   min="0"
                   value={form.children_without_bed}
-                  onChange={(e) => handleGuestChange("children_without_bed", e.target.value)}
+                  onChange={(e) =>
+                    handleGuestChange("children_without_bed", e.target.value)
+                  }
                   className="border rounded px-3 py-2"
                 />
               </label>
@@ -486,35 +624,57 @@ export default function DefaultPackageBookingEditModal({ editedBooking, setEdite
             <h4 className="text-sm font-semibold mb-2">Pricing</h4>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <label className="flex flex-col">
-                <span className="text-xs font-medium text-gray-600">Agent Commission</span>
+                <span className="text-xs font-medium text-gray-600">
+                  Agent Commission
+                </span>
                 <input
                   type="number"
                   value={form.agent_commission}
-                  onChange={(e) => setForm(prev => ({ ...prev, agent_commission: Number(e.target.value) }))}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      agent_commission: Number(e.target.value),
+                    }))
+                  }
                   className="border rounded px-3 py-2"
                 />
               </label>
 
               <label className="flex flex-col">
-                <span className="text-xs font-medium text-gray-600">Base Total</span>
+                <span className="text-xs font-medium text-gray-600">
+                  Base Total
+                </span>
                 <input
                   type="number"
                   value={form.base_total}
-                  onChange={(e) => setForm(prev => ({ ...prev, base_total: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((prev) => ({ ...prev, base_total: e.target.value }))
+                  }
                   className="border rounded px-3 py-2"
                 />
-                {errors.base_total && <p className="text-xs text-red-500">{errors.base_total}</p>}
+                {errors.base_total && (
+                  <p className="text-xs text-red-500">{errors.base_total}</p>
+                )}
               </label>
 
               <label className="flex flex-col">
-                <span className="text-xs font-medium text-gray-600">Total Amount</span>
+                <span className="text-xs font-medium text-gray-600">
+                  Total Amount
+                </span>
                 <input
                   type="number"
                   value={form.total_amount}
-                  onChange={(e) => setForm(prev => ({ ...prev, total_amount: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      total_amount: e.target.value,
+                    }))
+                  }
                   className="border rounded px-3 py-2"
                 />
-                {errors.total_amount && <p className="text-xs text-red-500">{errors.total_amount}</p>}
+                {errors.total_amount && (
+                  <p className="text-xs text-red-500">{errors.total_amount}</p>
+                )}
               </label>
             </div>
           </div>

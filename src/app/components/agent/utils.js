@@ -2,329 +2,560 @@ import { CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
+import toast from "react-hot-toast";
 // ---------------- Display components ----------------
-  // These return JSX for a booking. We call them like DisplayBooking(booking)
+// These return JSX for a booking. We call them like DisplayBooking(booking)
 
-export const DisplayBooking = (booking, packages, hotels) => {
-    if (!booking) return null;
-    return (
-      <CardContent
-        key={booking._id}
-        id={booking._id}
-        className="relative space-y-6 border p-0 rounded-lg bg-white shadow-lg overflow-hidden"
-      >
-        {/* top bar: id + download */}
-        <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b">
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-mono text-gray-600">ID</span>
-            <span className="text-sm font-mono text-gray-800">{`B2B${String(booking._id ?? "").slice(0, 6)}....`}</span>
-            {booking.status && (
-              <Badge
-                className={`ml-8 p-2
-                  ${booking.status === "pending" ? "bg-yellow-500 text-white" : ""}
-                  ${booking.status === "confirmed" ? "bg-green-500 text-white" : ""}
-                  ${booking.status === "cancelled" ? "bg-red-500 text-white" : ""}
-                `}
+export const DisplayBooking = (booking, packages, hotels, changeState) => {
+  if (!booking) return null;
+  return (
+    <CardContent
+      key={booking._id}
+      id={booking._id}
+      className="relative space-y-6 border p-0 rounded-lg bg-white shadow-lg overflow-hidden"
+    >
+      {/* top bar: id + download */}
+      <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b">
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-mono text-gray-600">ID</span>
+          <span className="text-sm font-mono text-gray-800">{`B2B${String(
+            booking._id ?? ""
+          ).slice(0, 6)}....`}</span>
+          {booking.status && (
+            <label className="flex items-center gap-3">
+              <select
+                name="status"
+                value={booking.status}
+                onChange={(e) => {
+                  const newStatus = e.target.value;
+
+                  // Allow only quoted -> confirmed
+                  if (
+                    booking.status === "quoted" &&
+                    newStatus === "confirmed"
+                  ) {
+                    changeState(booking._id, newStatus);
+                  } else {
+                    toast.error(
+                      "status can only changed from quoted to confirmed"
+                    );
+                  }
+                }}
+                // disabled={booking.status !== "quoted"} // disable if not in quoted state
+                className={`border rounded-lg px-3 py-2 w-40 font-medium text-sm
+                ${
+                  booking.status === "quoted"
+                    ? "bg-yellow-50 text-yellow-800"
+                    : booking.status === "confirmed"
+                    ? "bg-green-50 text-green-800"
+                    : booking.status === "pending"
+                    ? "bg-orange-50 text-orange-800"
+                    : booking.status === "booked"
+                    ? "bg-blue-50 text-blue-800"
+                    : booking.status === "cancelled"
+                    ? "bg-red-50 text-red-800"
+                    : "bg-gray-50 text-gray-800"
+                }
+              `}
               >
-                {booking.status}
-              </Badge>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <Button size="sm" variant="ghost" onClick={() => generatePdf(booking, packages, hotels)} aria-label={`Download ${booking._id}`}>
-              <Download className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-
-        <div className="p-6 bg-white">
-          {/* package */}
-          {booking.package_id ? (
-            <div className="border rounded-lg p-4 bg-gray-50">
-              <h3 className="font-semibold mb-2">Package</h3>
-              <p className="font-medium mb-3">{booking.package_name ?? "-"}</p>
-              <div className="mb-3 text-sm">
-                <div className="mb-1"><strong>Pickup</strong></div>
-                <div className="ml-2">Date: {formatDate(booking.dates?.pickup_date)}</div>
-                <div className="ml-2">Time: {formatTime(booking.dates?.pickup_time)}</div>
-                <div className="ml-2">Location: {booking.dates?.pickup_location ?? "-"}</div>
-              </div>
-              <div className="mb-3 text-sm">
-                <div className="mb-1"><strong>Drop</strong></div>
-                <div className="ml-2">Date: {formatDate(booking.dates?.drop_date)}</div>
-                <div className="ml-2">Time: {formatTime(booking.dates?.drop_time)}</div>
-                <div className="ml-2">Location: {booking.dates?.drop_location ?? "-"}</div>
-              </div>
-            </div>
-          ) : (
-            <div className="border rounded-lg p-4 bg-gray-50">
-              <h3 className="font-semibold mb-2">Package</h3>
-              <span className="text-sm text-gray-600">No package selected</span>
-            </div>
+                <option disabled value="quoted">
+                  Quoted
+                </option>
+                <option value="confirmed">
+                  Confirmed
+                </option>
+                <option disabled value="pending">
+                  Pending
+                </option>
+                <option disabled value="booked">
+                  Booked
+                </option>
+                <option disabled value="cancelled">
+                  Cancelled
+                </option>
+              </select>
+            </label>
           )}
-
-          {/* travelers */}
-          <div className="border rounded-lg p-4 bg-gray-50 mt-4">
-            <h3 className="font-semibold mb-2">Travelers</h3>
-            <div className="text-sm">
-              <div>Adults: {booking.guests?.adults_total ?? 0}</div>
-              <div>Children: {booking.guests?.children ?? 0}</div>
-              <div>Infants: {booking.guests?.infants ?? 0}</div>
-            </div>
-          </div>
-
-          {/* hotel */}
-          <div className="border rounded-lg p-4 bg-gray-50 mt-4">
-            <h3 className="font-semibold mb-2">Hotel</h3>
-            {booking.hotel_id ? (
-              <div className="text-sm">
-                <div className="font-medium">{booking.hotel?.hotel_name ?? "-"}</div>
-                <div>Rooms: {booking.hotel?.rooms ?? "-"}</div>
-                <div>Extra Beds: {booking.hotel?.extra_beds ?? 0}</div>
-                <div>Food Plan: {booking.hotel?.food_plan ?? "—"}</div>
-              </div>
-            ) : (
-              <div className="text-sm text-gray-600">No hotel selected</div>
-            )}
-          </div>
-
-          {/* vehicle */}
-          <div className="border rounded-lg p-4 bg-gray-50 mt-4">
-            <h3 className="font-semibold mb-2">Vehicle</h3>
-            {booking.vehicle_id ? (
-              <div className="text-sm">{booking.vehicle_name ?? "—"}</div>
-            ) : (
-              <div className="text-sm text-gray-600">No vehicle selected</div>
-            )}
-          </div>
-
-          {/* extras */}
-          <div className="border rounded-lg p-4 bg-gray-50 mt-4">
-            <h3 className="font-semibold mb-2">Extras</h3>
-            <div className="text-sm">
-              <div>
-                Extra Food:{" "}
-                {[
-                  booking.extras?.breakfast ? "Breakfast" : null,
-                  booking.extras?.lunchNonVeg ? "Lunch (Non-veg)" : null,
-                  booking.extras?.lunchVeg ? "Lunch (Veg)" : null,
-                ].filter(Boolean).join(", ") || "None"}
-              </div>
-              <div>Guide Needed: {booking.extras?.guideNeeded ? "Yes" : "No"}</div>
-              <div>Entry Ticket: {booking.extras?.entry_ticket_needed ? "Yes" : "No"}</div>
-              <div>Snow World Ticket: {booking.extras?.snow_world_needed ? "Yes" : "No"}</div>
-            </div>
-          </div>
-
-          {/* summary */}
-          <div className="border rounded-lg p-4 bg-gray-50 mt-4">
-            <h3 className="font-semibold mb-2">Summary</h3>
-            <div className="text-sm">
-              <div>Package Amount: {booking.pricing?.base_total ? `₹ ${booking.pricing.base_total}` : "0"}</div>
-              <div>Agent commission: {booking.pricing?.agent_commission ? `₹ ${booking.pricing.agent_commission}` : "0"}</div>
-              <div className="text-lg font-semibold">Total Amount: {booking.pricing?.total_amount ? `₹ ${booking.pricing.total_amount}` : "0"}</div>
-            </div>
-          </div>
-
-          <div className="mt-6 text-sm text-gray-600 border-t pt-4">
-            <div>For support: b2b@example.com | +91 12345 67890</div>
-            <div className="mt-1">Generated on: {formatTimestamp(new Date().toISOString())}</div>
-          </div>
         </div>
-      </CardContent>
-    );
-};
-
-export const DisplayDefaultBooking = (booking, defaultPackages, hotels) => {
-    if (!booking) return null;
-    return (
-      <CardContent
-        key={booking._id}
-        id={booking._id}
-        className="relative space-y-6 border p-0 rounded-lg bg-white shadow-lg overflow-hidden"
-      >
-        {/* top bar: id + download */}
-        <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b">
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-mono text-gray-600">ID</span>
-            <span className="text-sm font-mono text-gray-800">{`B2B${String(booking._id ?? "").slice(0, 6)}....`}</span>
-            <span className="ml-2 px-2 py-1 text-xs rounded bg-indigo-100 text-indigo-700">Default Package</span>
-            
-            {booking.status && (
-              <Badge
-                className={`ml-8 p-2
-                  ${booking.status === "pending" ? "bg-yellow-500 text-white" : ""}
-                  ${booking.status === "confirmed" ? "bg-green-500 text-white" : ""}
-                  ${booking.status === "cancelled" ? "bg-red-500 text-white" : ""}
-                `}
-              >
-                {booking.status}
-              </Badge>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button size="sm" variant="ghost" onClick={() => generateDefaultPackagePdf(booking, defaultPackages, hotels)} aria-label={`Download ${booking._id}`}>
-              <Download className="w-4 h-4" />
-            </Button>
-          </div>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => generatePdf(booking, packages, hotels)}
+            aria-label={`Download ${booking._id}`}
+          >
+            <Download className="w-4 h-4" />
+          </Button>
         </div>
+      </div>
 
-        <div className="p-6 bg-white">
-          {/* contact */}
+      <div className="p-6 bg-white">
+        {/* package */}
+        {booking.client_contact &&
+        Object.keys(booking.client_contact).length > 0 ? (
           <div className="border rounded-lg p-4 bg-gray-50">
-            <h3 className="font-semibold mb-2">Contact</h3>
-            <div className="text-sm">
-              <div className="font-medium">{booking.contact?.name ?? "-"}</div>
-              <div>Email: {booking.contact?.email ?? "-"}</div>
-              <div>Mobile: {booking.contact?.mobile_number ?? "-"}</div>
-              <div>State: {booking.contact?.state ?? "-"}</div>
-            </div>
+            <h3 className="font-semibold mb-2">Client Information</h3>
+            <div className="ml-2">Name: {booking.client_contact?.name}</div>
+            <div className="ml-2">Email: {booking.client_contact?.email}</div>
+            <div className="ml-2">Phone: {booking.client_contact?.phone}</div>
           </div>
-
-          {/* package */}
+        ) : (
+          <div className="border rounded-lg p-4 bg-gray-50">
+            <h3 className="font-semibold mb-2">Client Information</h3>
+            <span className="text-sm text-gray-600">
+              Client information not available
+            </span>
+          </div>
+        )}
+        {booking.package_id ? (
           <div className="border rounded-lg p-4 bg-gray-50 mt-4">
             <h3 className="font-semibold mb-2">Package</h3>
             <p className="font-medium mb-3">{booking.package_name ?? "-"}</p>
-            <div className="text-sm">
-              <div>Package ID: {booking.package_id ? String(booking.package_id) : "—"}</div>
-            </div>
-          </div>
-
-          {/* outbound / return dates */}
-          <div className="grid md:grid-cols-2 gap-4 mt-4">
-            <div className="border rounded-lg p-4 bg-gray-50">
-              <h3 className="font-semibold mb-2">Outbound</h3>
-              <div className="text-sm">
-                <div>Date: {formatDate(booking.dates?.outbound?.pickup_date)}</div>
-                <div>Departure: {formatTime(booking.dates?.outbound?.departureTime)}</div>
-                <div>Arrival: {formatTime(booking.dates?.outbound?.arrivalTime)}</div>
-                <div>Flight: {booking.dates?.outbound?.flight ?? "—"}</div>
+            <div className="mb-3 text-sm">
+              <div className="mb-1">
+                <strong>Pickup</strong>
+              </div>
+              <div className="ml-2">
+                Date: {formatDate(booking.dates?.pickup_date)}
+              </div>
+              <div className="ml-2">
+                Time: {formatTime(booking.dates?.pickup_time)}
+              </div>
+              <div className="ml-2">
+                Location: {booking.dates?.pickup_location ?? "-"}
               </div>
             </div>
-
-            <div className="border rounded-lg p-4 bg-gray-50">
-              <h3 className="font-semibold mb-2">Return</h3>
-              <div className="text-sm">
-                <div>Date: {formatDate(booking.dates?.return?.drop_date)}</div>
-                <div>Departure: {formatTime(booking.dates?.return?.departureTime)}</div>
-                <div>Arrival: {formatTime(booking.dates?.return?.arrivalTime)}</div>
-                <div>Flight: {booking.dates?.return?.flight ?? "—"}</div>
+            <div className="mb-3 text-sm">
+              <div className="mb-1">
+                <strong>Drop</strong>
+              </div>
+              <div className="ml-2">
+                Date: {formatDate(booking.dates?.drop_date)}
+              </div>
+              <div className="ml-2">
+                Time: {formatTime(booking.dates?.drop_time)}
+              </div>
+              <div className="ml-2">
+                Location: {booking.dates?.drop_location ?? "-"}
               </div>
             </div>
           </div>
-
-          {/* travelers */}
-          <div className="border rounded-lg p-4 bg-gray-50 mt-4">
-            <h3 className="font-semibold mb-2">Travelers</h3>
-            <div className="text-sm">
-              <div>Adults: {booking.guests?.adults_total ?? 0}</div>
-              <div>Children (with bed): {booking.guests?.children_with_bed ?? 0}</div>
-              <div>Children (without bed): {booking.guests?.children_without_bed ?? 0}</div>
-              <div>Infants: {booking.guests?.infants ?? 0}</div>
-            </div>
+        ) : (
+          <div className="border rounded-lg p-4 bg-gray-50">
+            <h3 className="font-semibold mb-2">Package</h3>
+            <span className="text-sm text-gray-600">No package selected</span>
           </div>
+        )}
 
-          {/* summary / pricing */}
-          <div className="border rounded-lg p-4 bg-gray-50 mt-4">
-            <h3 className="font-semibold mb-2">Summary</h3>
-            <div className="text-sm">
-              <div>Package Amount: {booking.pricing?.base_total ? `₹ ${booking.pricing.base_total}` : "0"}</div>
-              <div>Agent commission: {booking.pricing?.agent_commission ? `₹ ${booking.pricing.agent_commission}` : "0"}</div>
-              <div className="text-lg font-semibold">Total Amount: {booking.pricing?.total_amount ? `₹ ${booking.pricing.total_amount}` : "0"}</div>
-            </div>
-          </div>
-
-          <div className="mt-6 text-sm text-gray-600 border-t pt-4">
-            <div>For support: b2b@example.com | +91 12345 67890</div>
-            <div className="mt-1">Generated on: {formatTimestamp(new Date().toISOString())}</div>
+        {/* travelers */}
+        <div className="border rounded-lg p-4 bg-gray-50 mt-4">
+          <h3 className="font-semibold mb-2">Travelers</h3>
+          <div className="text-sm">
+            <div>Adults: {booking.guests?.adults_total ?? 0}</div>
+            <div>Children: {booking.guests?.children ?? 0}</div>
+            <div>Infants: {booking.guests?.infants ?? 0}</div>
           </div>
         </div>
-      </CardContent>
-    );
+
+        {/* hotel */}
+        <div className="border rounded-lg p-4 bg-gray-50 mt-4">
+          <h3 className="font-semibold mb-2">Hotel</h3>
+          {booking.hotel_id ? (
+            <div className="text-sm">
+              <div className="font-medium">
+                {booking.hotel?.hotel_name ?? "-"}
+              </div>
+              <div>Rooms: {booking.hotel?.rooms ?? "-"}</div>
+              <div>Extra Beds: {booking.hotel?.extra_beds ?? 0}</div>
+              <div>Food Plan: {booking.hotel?.food_plan ?? "—"}</div>
+            </div>
+          ) : (
+            <div className="text-sm text-gray-600">No hotel selected</div>
+          )}
+        </div>
+
+        {/* vehicle */}
+        <div className="border rounded-lg p-4 bg-gray-50 mt-4">
+          <h3 className="font-semibold mb-2">Vehicle</h3>
+          {booking.vehicle_id ? (
+            <div className="text-sm">{booking.vehicle_name ?? "—"}</div>
+          ) : (
+            <div className="text-sm text-gray-600">No vehicle selected</div>
+          )}
+        </div>
+
+        {/* extras */}
+        <div className="border rounded-lg p-4 bg-gray-50 mt-4">
+          <h3 className="font-semibold mb-2">Extras</h3>
+          <div className="text-sm">
+            <div>
+              Extra Food:{" "}
+              {[
+                booking.extras?.breakfast ? "Breakfast" : null,
+                booking.extras?.lunchNonVeg ? "Lunch (Non-veg)" : null,
+                booking.extras?.lunchVeg ? "Lunch (Veg)" : null,
+              ]
+                .filter(Boolean)
+                .join(", ") || "None"}
+            </div>
+            <div>
+              Guide Needed: {booking.extras?.guideNeeded ? "Yes" : "No"}
+            </div>
+            <div>
+              Entry Ticket: {booking.extras?.entry_ticket_needed ? "Yes" : "No"}
+            </div>
+            <div>
+              Snow World Ticket:{" "}
+              {booking.extras?.snow_world_needed ? "Yes" : "No"}
+            </div>
+          </div>
+        </div>
+
+        {/* summary */}
+        <div className="border rounded-lg p-4 bg-gray-50 mt-4">
+          <h3 className="font-semibold mb-2">Summary</h3>
+          <div className="text-sm">
+            <div>
+              Package Amount:{" "}
+              {booking.pricing?.base_total
+                ? `₹ ${booking.pricing.base_total}`
+                : "0"}
+            </div>
+            <div>
+              Agent commission:{" "}
+              {booking.pricing?.agent_commission
+                ? `₹ ${booking.pricing.agent_commission}`
+                : "0"}
+            </div>
+            <div className="text-lg font-semibold">
+              Total Amount:{" "}
+              {booking.pricing?.total_amount
+                ? `₹ ${booking.pricing.total_amount}`
+                : "0"}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 text-sm text-gray-600 border-t pt-4">
+          <div>For support: b2b@example.com | +91 12345 67890</div>
+          <div className="mt-1">
+            Generated on: {formatTimestamp(new Date().toISOString())}
+          </div>
+        </div>
+      </div>
+    </CardContent>
+  );
+};
+
+export const DisplayDefaultBooking = (
+  booking,
+  defaultPackages,
+  hotels,
+  changeState
+) => {
+  if (!booking) return null;
+  return (
+    <CardContent
+      key={booking._id}
+      id={booking._id}
+      className="relative space-y-6 border p-0 rounded-lg bg-white shadow-lg overflow-hidden"
+    >
+      {/* top bar: id + download */}
+      <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b">
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-mono text-gray-600">ID</span>
+          <span className="text-sm font-mono text-gray-800">{`B2B${String(
+            booking._id ?? ""
+          ).slice(0, 6)}....`}</span>
+          <span className="ml-2 px-2 py-1 text-xs rounded bg-indigo-100 text-indigo-700">
+            Default Package
+          </span>
+          {booking.status && (
+            <label className="flex items-center gap-3">
+              <select
+                name="status"
+                value={booking.status}
+                onChange={(e) => {
+                  const newStatus = e.target.value;
+
+                  // Allow only quoted -> confirmed
+                  if (
+                    booking.status === "quoted" &&
+                    newStatus === "confirmed"
+                  ) {
+                    changeState(booking._id, newStatus);
+                  } else {
+                    toast.error(
+                      "status can only changed from quoted to confirmed"
+                    );
+                  }
+                }}
+                // disabled={booking.status !== "quoted"} // disable if not in quoted state
+                className={`border rounded-lg px-3 py-2 w-40 font-medium text-sm
+                ${
+                  booking.status === "quoted"
+                    ? "bg-yellow-50 text-yellow-800"
+                    : booking.status === "confirmed"
+                    ? "bg-green-50 text-green-800"
+                    : booking.status === "pending"
+                    ? "bg-orange-50 text-orange-800"
+                    : booking.status === "booked"
+                    ? "bg-blue-50 text-blue-800"
+                    : booking.status === "cancelled"
+                    ? "bg-red-50 text-red-800"
+                    : "bg-gray-50 text-gray-800"
+                }
+              `}
+              >
+                <option disabled value="quoted">
+                  Quoted
+                </option>
+                <option value="confirmed">
+                  Confirmed
+                </option>
+                <option disabled value="pending">
+                  Pending
+                </option>
+                <option disabled value="booked">
+                  Booked
+                </option>
+                <option disabled value="cancelled">
+                  Cancelled
+                </option>
+              </select>
+            </label>
+          )}{" "}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() =>
+              generateDefaultPackagePdf(booking, defaultPackages, hotels)
+            }
+            aria-label={`Download ${booking._id}`}
+          >
+            <Download className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+
+      <div className="p-6 bg-white">
+        {booking.client_contact &&
+        Object.keys(booking.client_contact).length > 0 ? (
+          <div className="border rounded-lg p-4 bg-gray-50">
+            <h3 className="font-semibold mb-2">Client Information</h3>
+            <div className="ml-2">Name: {booking.client_contact?.name}</div>
+            <div className="ml-2">Email: {booking.client_contact?.email}</div>
+            <div className="ml-2">Phone: {booking.client_contact?.phone}</div>
+          </div>
+        ) : (
+          <div className="border rounded-lg p-4 bg-gray-50">
+            <h3 className="font-semibold mb-2">Client Information</h3>
+            <span className="text-sm text-gray-600">
+              Client information not available
+            </span>
+          </div>
+        )}
+        {/* contact */}
+        <div className="border rounded-lg p-4 bg-gray-50 mt-4">
+          <h3 className="font-semibold mb-2">Contact</h3>
+          <div className="text-sm">
+            <div className="font-medium">{booking.contact?.name ?? "-"}</div>
+            <div>Email: {booking.contact?.email ?? "-"}</div>
+            <div>Mobile: {booking.contact?.mobile_number ?? "-"}</div>
+            <div>State: {booking.contact?.state ?? "-"}</div>
+          </div>
+        </div>
+
+        {/* package */}
+        <div className="border rounded-lg p-4 bg-gray-50 mt-4">
+          <h3 className="font-semibold mb-2">Package</h3>
+          <p className="font-medium mb-3">{booking.package_name ?? "-"}</p>
+          <div className="text-sm">
+            <div>
+              Package ID:{" "}
+              {booking.package_id ? String(booking.package_id) : "—"}
+            </div>
+          </div>
+        </div>
+
+        {/* outbound / return dates */}
+        <div className="grid md:grid-cols-2 gap-4 mt-4">
+          <div className="border rounded-lg p-4 bg-gray-50">
+            <h3 className="font-semibold mb-2">Outbound</h3>
+            <div className="text-sm">
+              <div>
+                Date: {formatDate(booking.dates?.outbound?.pickup_date)}
+              </div>
+              <div>
+                Departure: {formatTime(booking.dates?.outbound?.departureTime)}
+              </div>
+              <div>
+                Arrival: {formatTime(booking.dates?.outbound?.arrivalTime)}
+              </div>
+              <div>Flight: {booking.dates?.outbound?.flight ?? "—"}</div>
+            </div>
+          </div>
+
+          <div className="border rounded-lg p-4 bg-gray-50">
+            <h3 className="font-semibold mb-2">Return</h3>
+            <div className="text-sm">
+              <div>Date: {formatDate(booking.dates?.return?.drop_date)}</div>
+              <div>
+                Departure: {formatTime(booking.dates?.return?.departureTime)}
+              </div>
+              <div>
+                Arrival: {formatTime(booking.dates?.return?.arrivalTime)}
+              </div>
+              <div>Flight: {booking.dates?.return?.flight ?? "—"}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* travelers */}
+        <div className="border rounded-lg p-4 bg-gray-50 mt-4">
+          <h3 className="font-semibold mb-2">Travelers</h3>
+          <div className="text-sm">
+            <div>Adults: {booking.guests?.adults_total ?? 0}</div>
+            <div>
+              Children (with bed): {booking.guests?.children_with_bed ?? 0}
+            </div>
+            <div>
+              Children (without bed):{" "}
+              {booking.guests?.children_without_bed ?? 0}
+            </div>
+            <div>Infants: {booking.guests?.infants ?? 0}</div>
+          </div>
+        </div>
+
+        {/* summary / pricing */}
+        <div className="border rounded-lg p-4 bg-gray-50 mt-4">
+          <h3 className="font-semibold mb-2">Summary</h3>
+          <div className="text-sm">
+            <div>
+              Package Amount:{" "}
+              {booking.pricing?.base_total
+                ? `₹ ${booking.pricing.base_total}`
+                : "0"}
+            </div>
+            <div>
+              Agent commission:{" "}
+              {booking.pricing?.agent_commission
+                ? `₹ ${booking.pricing.agent_commission}`
+                : "0"}
+            </div>
+            <div className="text-lg font-semibold">
+              Total Amount:{" "}
+              {booking.pricing?.total_amount
+                ? `₹ ${booking.pricing.total_amount}`
+                : "0"}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 text-sm text-gray-600 border-t pt-4">
+          <div>For support: b2b@example.com | +91 12345 67890</div>
+          <div className="mt-1">
+            Generated on: {formatTimestamp(new Date().toISOString())}
+          </div>
+        </div>
+      </div>
+    </CardContent>
+  );
 };
 
 // ---------------- Formatting helpers ----------------
 // show only date (e.g. 11 Sept 2025)
 export const formatDate = (dateStr) => {
-if (!dateStr) return "-";
-const d = new Date(dateStr);
-if (Number.isNaN(d.getTime())) return "-";
-return d.toLocaleDateString("en-GB", {
+  if (!dateStr) return "-";
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return "-";
+  return d.toLocaleDateString("en-GB", {
     day: "numeric",
     month: "short",
     year: "numeric",
-});
+  });
 };
 
 export const formatTime = (value) => {
-// Accepts:
-// - full ISO datetime string
-// - time-only strings "HH:MM" or "HH:MM:SS"
-// Returns "02:30 PM" or "—" when invalid
-if (value === undefined || value === null || value === "") return "—";
-const s = String(value).trim();
-// If looks like time-only "9:30", "09:30:00"
-const timeOnlyMatch = s.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
-try {
+  // Accepts:
+  // - full ISO datetime string
+  // - time-only strings "HH:MM" or "HH:MM:SS"
+  // Returns "02:30 PM" or "—" when invalid
+  if (value === undefined || value === null || value === "") return "—";
+  const s = String(value).trim();
+  // If looks like time-only "9:30", "09:30:00"
+  const timeOnlyMatch = s.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  try {
     if (timeOnlyMatch) {
-    const hh = Number(timeOnlyMatch[1]);
-    const mm = Number(timeOnlyMatch[2]);
-    if (hh >= 0 && hh <= 23 && mm >= 0 && mm <= 59) {
+      const hh = Number(timeOnlyMatch[1]);
+      const mm = Number(timeOnlyMatch[2]);
+      if (hh >= 0 && hh <= 23 && mm >= 0 && mm <= 59) {
         const tmp = new Date();
         tmp.setHours(hh, mm, 0, 0);
-        return tmp.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: true });
-    }
-    return "—";
+        return tmp.toLocaleTimeString("en-GB", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        });
+      }
+      return "—";
     }
     // Otherwise try parse as date/time
     const d = new Date(s);
     if (Number.isNaN(d.getTime())) return "—";
-    return d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: true });
-} catch (err) {
+    return d.toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  } catch (err) {
     return "—";
-}
+  }
 };
 
-
 export const formatTimestamp = (timestamp) => {
-if (!timestamp) return "-";
-const date = new Date(timestamp);
-if (Number.isNaN(date.getTime())) return "-";
-return date.toLocaleString("en-IN", {
+  if (!timestamp) return "-";
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleString("en-IN", {
     day: "2-digit",
     month: "short",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-});
+  });
 };
 
-
-
- // ---------------- PDF generation (full implementations) ----------------
+// ---------------- PDF generation (full implementations) ----------------
 
 // generatePdf (booking)
 export const generatePdf = async (booking, packages, hotels) => {
-try {
+  try {
     // helper - fetch image as base64
     const fetchImageAsBase64 = async (url) => {
-    try {
+      try {
         const res = await fetch(url);
         const blob = await res.blob();
         return await new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.readAsDataURL(blob);
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.readAsDataURL(blob);
         });
-    } catch (err) {
+      } catch (err) {
         console.warn("Failed to fetch image:", url, err);
         return null;
-    }
+      }
     };
 
     const { jsPDF } = await import("jspdf");
-    const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+    const doc = new jsPDF({
+      unit: "mm",
+      format: "a4",
+      orientation: "portrait",
+    });
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 16;
@@ -332,74 +563,97 @@ try {
 
     let y = margin;
 
-    const fmtDate = (d) => (d ? new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "-");
-    const fmtCurrency = (amount) => (amount != null ? `Rs. ${Number(amount).toLocaleString("en-IN")}` : "-");
-    const wrapLines = (text, maxWidth) => doc.splitTextToSize(String(text ?? "-"), Math.max(10, maxWidth));
+    const fmtDate = (d) =>
+      d
+        ? new Date(d).toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          })
+        : "-";
+    const fmtCurrency = (amount) =>
+      amount != null ? `Rs. ${Number(amount).toLocaleString("en-IN")}` : "-";
+    const wrapLines = (text, maxWidth) =>
+      doc.splitTextToSize(String(text ?? "-"), Math.max(10, maxWidth));
 
     const ensureSpace = (needed) => {
-    // how much vertical space is left before reaching footer area
-    const bottomLimit = pageHeight - margin - 20;
-    if (y + needed > bottomLimit) {
+      // how much vertical space is left before reaching footer area
+      const bottomLimit = pageHeight - margin - 20;
+      if (y + needed > bottomLimit) {
         doc.addPage();
         // reset y to top margin, then draw header which will advance y
         y = margin;
         renderHeader();
-    }
+      }
     };
 
     const renderHeader = () => {
-    // draw header at current y (y should already be margin on a new page)
-    doc.setFontSize(14);
-    doc.setFont(undefined, "bold");
-    doc.text(booking.package_name || "Booking Details", pageWidth / 2, y, { align: "center" });
-    // add spacing after header
-    y += 10;
-    // reset to body font for subsequent text
-    doc.setFontSize(10);
-    doc.setFont(undefined, "normal");
+      // draw header at current y (y should already be margin on a new page)
+      doc.setFontSize(14);
+      doc.setFont(undefined, "bold");
+      doc.text(booking.package_name || "Booking Details", pageWidth / 2, y, {
+        align: "center",
+      });
+      // add spacing after header
+      y += 10;
+      // reset to body font for subsequent text
+      doc.setFontSize(10);
+      doc.setFont(undefined, "normal");
     };
 
     const renderFooter = () => {
-    const footerY = pageHeight - 20;
-    doc.setFontSize(8);
-    doc.text(`Support: ${ "b2b@example.com"} | ${"+91 12345 67890"}`, margin, footerY);
-    doc.text(`Generated: ${new Date().toLocaleString()}`, pageWidth - margin, footerY, { align: "right" });
+      const footerY = pageHeight - 20;
+      doc.setFontSize(8);
+      doc.text(
+        `Support: ${"b2b@example.com"} | ${"+91 12345 67890"}`,
+        margin,
+        footerY
+      );
+      doc.text(
+        `Generated: ${new Date().toLocaleString()}`,
+        pageWidth - margin,
+        footerY,
+        { align: "right" }
+      );
     };
 
     const addSectionTitle = (title) => {
-    ensureSpace(8);
-    doc.setFontSize(12);
-    doc.setFont(undefined, "bold");
-    doc.text(title, margin, y);
-    y += 6;
-    doc.setDrawColor(200);
-    doc.line(margin, y, pageWidth - margin, y);
-    doc.setDrawColor(0);
-    y += 4;
+      ensureSpace(8);
+      doc.setFontSize(12);
+      doc.setFont(undefined, "bold");
+      doc.text(title, margin, y);
+      y += 6;
+      doc.setDrawColor(200);
+      doc.line(margin, y, pageWidth - margin, y);
+      doc.setDrawColor(0);
+      y += 4;
     };
 
     const addInlineKV = (label, value, options = {}) => {
-    // options: { fontSize: number }
-    const fontSize = options.fontSize || 10;
-    const labelStyle = "bold";
-    const valueStyle = "normal";
+      // options: { fontSize: number }
+      const fontSize = options.fontSize || 10;
+      const labelStyle = "bold";
+      const valueStyle = "normal";
 
-    // compute a reasonable line height in mm (approx)
-    const lineHeight = Math.max(4, fontSize * 0.5 + 1);
+      // compute a reasonable line height in mm (approx)
+      const lineHeight = Math.max(4, fontSize * 0.5 + 1);
 
-    // prepare text and widths
-    const labelText = `${label}:`;
-    doc.setFontSize(fontSize);
-    doc.setFont(undefined, labelStyle);
-    const labelWidth = doc.getTextWidth(labelText);
+      // prepare text and widths
+      const labelText = `${label}:`;
+      doc.setFontSize(fontSize);
+      doc.setFont(undefined, labelStyle);
+      const labelWidth = doc.getTextWidth(labelText);
 
-    const valueMaxWidth = contentWidth - (margin + labelWidth + 4 - margin);
-    const valueStr = value == null ? "-" : String(value);
-    const valueLines = doc.splitTextToSize(valueStr, Math.max(10, valueMaxWidth));
+      const valueMaxWidth = contentWidth - (margin + labelWidth + 4 - margin);
+      const valueStr = value == null ? "-" : String(value);
+      const valueLines = doc.splitTextToSize(
+        valueStr,
+        Math.max(10, valueMaxWidth)
+      );
 
-    // If label is too wide to fit inline nicely, put label on its own line
-    const inlineThreshold = contentWidth * 0.6; // if label takes >60% of width, don't inline
-    if (labelWidth + 4 > inlineThreshold) {
+      // If label is too wide to fit inline nicely, put label on its own line
+      const inlineThreshold = contentWidth * 0.6; // if label takes >60% of width, don't inline
+      if (labelWidth + 4 > inlineThreshold) {
         // label on its own line
         ensureSpace(lineHeight + valueLines.length * lineHeight + 4);
         doc.setFont(undefined, labelStyle);
@@ -408,7 +662,7 @@ try {
         doc.setFont(undefined, valueStyle);
         doc.text(valueLines, margin, y);
         y += valueLines.length * lineHeight + 4;
-    } else {
+      } else {
         // inline label + value
         ensureSpace(Math.max(lineHeight, valueLines.length * lineHeight) + 4);
         // draw label
@@ -419,11 +673,11 @@ try {
         const valueX = margin + labelWidth + 4;
         doc.text(valueLines, valueX, y);
         y += valueLines.length * lineHeight + 4;
-    }
+      }
 
-    // reset default font settings to avoid leakage
-    doc.setFontSize(10);
-    doc.setFont(undefined, "normal");
+      // reset default font settings to avoid leakage
+      doc.setFontSize(10);
+      doc.setFont(undefined, "normal");
     };
 
     renderHeader();
@@ -443,14 +697,16 @@ try {
     addInlineKV("Drop Time", formatTime(booking.dates?.drop_time));
     addInlineKV("Drop Location", booking.dates?.drop_location ?? "-");
 
-
     addSectionTitle("Guests");
     addInlineKV("Adults", booking.guests?.adults_total ?? 0);
     addInlineKV("Children", booking.guests?.children ?? 0);
     addInlineKV("Infants", booking.guests?.infants ?? 0);
 
     addSectionTitle("Extras");
-    addInlineKV("Entry Ticket", booking.extras?.entry_ticket_needed ? "Yes" : "No");
+    addInlineKV(
+      "Entry Ticket",
+      booking.extras?.entry_ticket_needed ? "Yes" : "No"
+    );
     addInlineKV("Snow World", booking.extras?.snow_world_needed ? "Yes" : "No");
     addInlineKV("Breakfast", booking.extras?.breakfast ? "Yes" : "No");
     addInlineKV("Lunch Veg", booking.extras?.lunchVeg ? "Yes" : "No");
@@ -458,36 +714,43 @@ try {
     addInlineKV("Guide Needed", booking.extras?.guideNeeded ? "Yes" : "No");
 
     if (booking.hotel_id) {
-    addSectionTitle("Hotel Details");
-    addInlineKV("Hotel", booking.hotel?.hotel_name ?? "-");
-    addInlineKV("Rooms", booking.hotel?.rooms ?? 0);
-    addInlineKV("Extra Beds", booking.hotel?.extra_beds ?? 0);
-    addInlineKV("Food Plan", booking.hotel?.food_plan ?? "-");
+      addSectionTitle("Hotel Details");
+      addInlineKV("Hotel", booking.hotel?.hotel_name ?? "-");
+      addInlineKV("Rooms", booking.hotel?.rooms ?? 0);
+      addInlineKV("Extra Beds", booking.hotel?.extra_beds ?? 0);
+      addInlineKV("Food Plan", booking.hotel?.food_plan ?? "-");
 
-      const hotel = hotels?.find((h) => String(h._id) === String(booking.hotel_id));
+      const hotel = hotels?.find(
+        (h) => String(h._id) === String(booking.hotel_id)
+      );
 
-    if (hotel?.imageUrl) {
+      if (hotel?.imageUrl) {
         const base64Img = await fetchImageAsBase64(hotel.imageUrl);
         if (base64Img) {
-        const imgHeight = 40;
-        const imgWidth = contentWidth;
-        ensureSpace(imgHeight + 6);
-        doc.addImage(base64Img, "JPEG", margin, y, imgWidth, imgHeight);
-        y += imgHeight + 8;
+          const imgHeight = 40;
+          const imgWidth = contentWidth;
+          ensureSpace(imgHeight + 6);
+          doc.addImage(base64Img, "JPEG", margin, y, imgWidth, imgHeight);
+          y += imgHeight + 8;
         }
-    }
+      }
     }
 
     addSectionTitle("Payment Summary");
-    addInlineKV("Agent Commission", fmtCurrency(booking.pricing?.agent_commission));
+    addInlineKV(
+      "Agent Commission",
+      fmtCurrency(booking.pricing?.agent_commission)
+    );
     addInlineKV("Base Total", fmtCurrency(booking.pricing?.base_total));
     addInlineKV("Total Amount", fmtCurrency(booking.pricing?.total_amount));
 
     // Itinerary (from package data)
-    const pkg = packages?.find((p) => String(p._id) === String(booking.package_id));
+    const pkg = packages?.find(
+      (p) => String(p._id) === String(booking.package_id)
+    );
     if (pkg && Array.isArray(pkg.itineraries) && pkg.itineraries.length) {
-    addSectionTitle("Itinerary");
-    for (const it of pkg.itineraries) {
+      addSectionTitle("Itinerary");
+      for (const it of pkg.itineraries) {
         const lineHeight = 6;
         const normalSize = 10;
         ensureSpace(lineHeight * 3);
@@ -500,16 +763,16 @@ try {
         doc.text(descLines, margin, y);
         y += descLines.length * lineHeight + 2;
         if (it.image) {
-        const base64Img = await fetchImageAsBase64(it.image);
-        if (base64Img) {
+          const base64Img = await fetchImageAsBase64(it.image);
+          if (base64Img) {
             const imgHeight = 40;
             const imgWidth = contentWidth;
             ensureSpace(imgHeight + 6);
             doc.addImage(base64Img, "JPEG", margin, y, imgWidth, imgHeight);
             y += imgHeight + 8;
+          }
         }
-        }
-    }
+      }
     }
 
     renderFooter();
@@ -517,23 +780,29 @@ try {
     // Page numbers
     const pageCount = doc.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    doc.setFontSize(8);
-    doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 8, { align: "center" });
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 8, {
+        align: "center",
+      });
     }
 
     doc.save(`booking_${booking._id}.pdf`);
-} catch (err) {
+  } catch (err) {
     console.error("PDF generation failed:", err);
     throw err;
-}
+  }
 };
 
 // generateDefaultPackagePdf (full)
 export const generateDefaultPackagePdf = async (booking, defaultPackages) => {
-try {
+  try {
     const { jsPDF } = await import("jspdf");
-    const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+    const doc = new jsPDF({
+      unit: "mm",
+      format: "a4",
+      orientation: "portrait",
+    });
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 16;
@@ -549,80 +818,103 @@ try {
     doc.setProperties({ title: `DefaultPackageBooking_${booking._id}` });
 
     const fmtDate = (iso) => {
-    if (!iso) return "-";
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return iso;
-    return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+      if (!iso) return "-";
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return iso;
+      return d.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
     };
 
     const fmtDateTime = (iso) => {
-    if (!iso) return "-";
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return iso;
-    return d.toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+      if (!iso) return "-";
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return iso;
+      return d.toLocaleString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
     };
 
-    const fmtCurrency = (amount) => (amount != null && amount !== "" ? `Rs. ${Number(amount).toLocaleString("en-IN")}` : "—");
+    const fmtCurrency = (amount) =>
+      amount != null && amount !== ""
+        ? `Rs. ${Number(amount).toLocaleString("en-IN")}`
+        : "—";
 
     const ensureSpace = (needed) => {
-    if (y + needed > pageHeight - margin) {
+      if (y + needed > pageHeight - margin) {
         doc.addPage();
         y = margin;
-    }
+      }
     };
 
     const wrapLines = (text, maxWidth, fontSize = normalSize) => {
-    doc.setFontSize(fontSize);
-    doc.setFont(undefined, "normal");
-    return doc.splitTextToSize(String(text ?? "-"), Math.max(10, maxWidth));
+      doc.setFontSize(fontSize);
+      doc.setFont(undefined, "normal");
+      return doc.splitTextToSize(String(text ?? "-"), Math.max(10, maxWidth));
     };
 
     const addInlineKV = (label, value) => {
-    const labelText = `${label}:`;
-    doc.setFontSize(normalSize);
-    doc.setFont(undefined, "bold");
-    const labelWidth = doc.getTextWidth(labelText);
-    const valueX = margin + labelWidth + labelGap;
-    const availWidth = contentWidth - (valueX - margin);
-    const lines = wrapLines(value, availWidth);
-    ensureSpace(lines.length * lineHeight);
-    doc.text(labelText, margin, y);
-    doc.setFont(undefined, "normal");
-    doc.text(lines, valueX, y);
-    y += lines.length * lineHeight + 2;
+      const labelText = `${label}:`;
+      doc.setFontSize(normalSize);
+      doc.setFont(undefined, "bold");
+      const labelWidth = doc.getTextWidth(labelText);
+      const valueX = margin + labelWidth + labelGap;
+      const availWidth = contentWidth - (valueX - margin);
+      const lines = wrapLines(value, availWidth);
+      ensureSpace(lines.length * lineHeight);
+      doc.text(labelText, margin, y);
+      doc.setFont(undefined, "normal");
+      doc.text(lines, valueX, y);
+      y += lines.length * lineHeight + 2;
     };
 
     const addSectionTitle = (title) => {
-    ensureSpace(lineHeight + 6);
-    doc.setFontSize(sectionTitleSize);
-    doc.setFont(undefined, "bold");
-    doc.text(title, margin, y);
-    y += lineHeight;
-    doc.setDrawColor(200);
-    doc.line(margin, y - lineHeight / 3, pageWidth - margin, y - lineHeight / 3);
-    doc.setDrawColor(0);
-    y += 4;
+      ensureSpace(lineHeight + 6);
+      doc.setFontSize(sectionTitleSize);
+      doc.setFont(undefined, "bold");
+      doc.text(title, margin, y);
+      y += lineHeight;
+      doc.setDrawColor(200);
+      doc.line(
+        margin,
+        y - lineHeight / 3,
+        pageWidth - margin,
+        y - lineHeight / 3
+      );
+      doc.setDrawColor(0);
+      y += 4;
     };
 
     const fetchImageAsBase64 = async (url) => {
-    try {
+      try {
         const res = await fetch(url);
         const blob = await res.blob();
         return await new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result);
-        reader.readAsDataURL(blob);
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(blob);
         });
-    } catch (err) {
+      } catch (err) {
         console.error("Image fetch failed:", url, err);
         return null;
-    }
+      }
     };
 
     // ====== Content ======
     doc.setFontSize(titleSize);
     doc.setFont(undefined, "bold");
-    doc.text(booking.package_name || "Default Package Booking", pageWidth / 2, y, { align: "center" });
+    doc.text(
+      booking.package_name || "Default Package Booking",
+      pageWidth / 2,
+      y,
+      { align: "center" }
+    );
     y += 12;
 
     addSectionTitle("Customer Details");
@@ -636,46 +928,60 @@ try {
 
     addSectionTitle("Outbound Journey");
     addInlineKV("Pickup Date", fmtDate(booking.dates?.outbound?.pickup_date));
-    addInlineKV("Departure Time", formatTime(booking.dates?.outbound?.departureTime));
-    addInlineKV("Arrival Time", formatTime(booking.dates?.outbound?.arrivalTime));
+    addInlineKV(
+      "Departure Time",
+      formatTime(booking.dates?.outbound?.departureTime)
+    );
+    addInlineKV(
+      "Arrival Time",
+      formatTime(booking.dates?.outbound?.arrivalTime)
+    );
     addInlineKV("Flight", booking.dates?.outbound?.flight ?? "-");
 
     addSectionTitle("Return Journey");
     addInlineKV("Drop Date", fmtDate(booking.dates?.return?.drop_date));
-    addInlineKV("Departure Time", formatTime(booking.dates?.return?.departureTime));
+    addInlineKV(
+      "Departure Time",
+      formatTime(booking.dates?.return?.departureTime)
+    );
     addInlineKV("Arrival Time", formatTime(booking.dates?.return?.arrivalTime));
     addInlineKV("Flight", booking.dates?.return?.flight ?? "-");
 
     addSectionTitle("Travelers");
     addInlineKV("Adults", booking.guests?.adults_total ?? 0);
     addInlineKV("Children With Bed", booking.guests?.children_with_bed ?? 0);
-    addInlineKV("Children Without Bed", booking.guests?.children_without_bed ?? 0);
+    addInlineKV(
+      "Children Without Bed",
+      booking.guests?.children_without_bed ?? 0
+    );
     addInlineKV("Infants", booking.guests?.infants ?? 0);
 
     addSectionTitle("Payment Summary");
     const payRows = [
-    ["Base Amount", fmtCurrency(booking.pricing?.base_total)],
-    ["Agent Commission", fmtCurrency(booking.pricing?.agent_commission)],
-    ["Total Payable", fmtCurrency(booking.pricing?.total_amount)],
+      ["Base Amount", fmtCurrency(booking.pricing?.base_total)],
+      ["Agent Commission", fmtCurrency(booking.pricing?.agent_commission)],
+      ["Total Payable", fmtCurrency(booking.pricing?.total_amount)],
     ];
     for (const [label, amount] of payRows) {
-    ensureSpace(lineHeight);
-    doc.setFontSize(normalSize);
-    doc.setFont(undefined, label === "Total Payable" ? "bold" : "normal");
-    doc.text(label, margin, y);
-    doc.text(String(amount), pageWidth - margin, y, { align: "right" });
-    y += lineHeight;
+      ensureSpace(lineHeight);
+      doc.setFontSize(normalSize);
+      doc.setFont(undefined, label === "Total Payable" ? "bold" : "normal");
+      doc.text(label, margin, y);
+      doc.text(String(amount), pageWidth - margin, y, { align: "right" });
+      y += lineHeight;
     }
 
     addSectionTitle("Status");
     addInlineKV("Booking Status", booking.status ?? "pending");
 
     // Itineraries from defaultPackages
-    const pkg = defaultPackages?.find((p) => String(p._id) === String(booking.package_id));
+    const pkg = defaultPackages?.find(
+      (p) => String(p._id) === String(booking.package_id)
+    );
 
     if (pkg && Array.isArray(pkg.itineraries) && pkg.itineraries.length) {
-    addSectionTitle("Itinerary");
-    for (const it of pkg.itineraries) {
+      addSectionTitle("Itinerary");
+      for (const it of pkg.itineraries) {
         ensureSpace(lineHeight * 3);
         doc.setFontSize(normalSize);
         doc.setFont(undefined, "bold");
@@ -686,28 +992,30 @@ try {
         doc.text(descLines, margin, y);
         y += descLines.length * lineHeight + 2;
         if (it.image) {
-        const base64Img = await fetchImageAsBase64(it.image);
-        if (base64Img) {
+          const base64Img = await fetchImageAsBase64(it.image);
+          if (base64Img) {
             const imgHeight = 40;
             const imgWidth = contentWidth;
             ensureSpace(imgHeight + 6);
             doc.addImage(base64Img, "JPEG", margin, y, imgWidth, imgHeight);
             y += imgHeight + 8;
+          }
         }
-        }
-    }
+      }
     }
 
     const pageCount = doc.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    doc.setFontSize(8);
-    doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 8, { align: "center" });
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 8, {
+        align: "center",
+      });
     }
 
     doc.save(`default_booking_${booking._id}.pdf`);
-} catch (err) {
+  } catch (err) {
     console.error("Default Package PDF generation failed:", err);
     throw err;
-}
+  }
 };

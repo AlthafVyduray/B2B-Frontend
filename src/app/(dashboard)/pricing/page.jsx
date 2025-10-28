@@ -1,12 +1,11 @@
-"use client"
+"use client";
 
-
-import useAdminStore from "@/stores/useAdminStore"
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
+import useAdminStore from "@/stores/useAdminStore";
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Search,
   X,
@@ -25,13 +24,13 @@ import {
   Ticket,
   Snowflake,
   User,
-} from "lucide-react"
-import Header from "@/app/components/admin/Hearder"
+} from "lucide-react";
+import Header from "@/app/components/admin/Hearder";
 
 export default function PricingPage() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [filterCategory, setFilterCategory] = useState("all")
-  const [isLoading, setIsLoading] = useState(false)
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterCategory, setFilterCategory] = useState("all");
+  const [isLoading, setIsLoading] = useState(false);
 
   const {
     pricing,
@@ -72,7 +71,6 @@ export default function PricingPage() {
   const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
-    
     if (pricesToUpdate) {
       setFormData({
         package_id: pricesToUpdate.package_id?._id ?? "",
@@ -200,7 +198,6 @@ export default function PricingPage() {
     }
   };
 
-
   const safePricing = Array.isArray(pricing) ? pricing.filter(Boolean) : [];
   const safePackages = Array.isArray(packages) ? packages.filter(Boolean) : [];
 
@@ -209,9 +206,6 @@ export default function PricingPage() {
     const pkg = safePackages.find((p) => String(p._id) === String(pkgId));
     return pkg ? pkg.package_name : "-";
   };
-
-  
-
 
   // const filteredPricing = pricingData.filter((item) => {
   //   const matchesSearch = item.package.toLowerCase().includes(searchTerm.toLowerCase())
@@ -222,144 +216,181 @@ export default function PricingPage() {
   // const categories = ["all", "weekend", "extended", "luxury", "premium"]
 
   return (
-    <div className="min-h-screen bg-white lg:p-6 lg:mt-0 mt-10 m-2">
-      <Header />
-      <div className=" mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Pricing Management</h1>
-            <p className="text-gray-600 mt-1">Manage package pricing and service rates</p>
+    <div className="min-h-screen bg-background flex mt-14 lg:mt-0">
+      <main className="flex-1 flex flex-col">
+        <Header />
+        <div className="p-6 space-y-6 bg-gray-50">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Pricing Management
+              </h1>
+              <p className="text-gray-600 mt-1">
+                Manage package pricing and service rates
+              </p>
+            </div>
+            <Button
+              onClick={() => setPricesToCreate(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Price
+            </Button>
           </div>
-          <Button
-            onClick={() => setPricesToCreate(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white">
-            <Plus className="w-4 h-4 mr-2" />
-            Add Price
-          </Button>
+
+          {/* Pricing Cards */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {safePricing.map((pricing) => (
+              <Card
+                key={pricing._id}
+                className="border-0 shadow-sm hover:shadow-md transition-shadow"
+              >
+                <CardHeader className="pb-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle className="text-xl font-bold text-gray-900">
+                        {pricing.package_id?.package_name}
+                      </CardTitle>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setPricesToUpdate(pricing)}
+                        className="text-blue-600 border-blue-200 hover:bg-blue-50 bg-transparent"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setPricesToDelete(pricing)}
+                        className="text-red-600 border-red-200 hover:bg-red-50 bg-transparent"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Entry Pricing */}
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                      <MapPin className="w-4 h-4 mr-2 text-blue-600" />
+                      Entry Fees
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-gray-600">Adult</p>
+                        <p className="font-semibold text-gray-900">
+                          ₹{pricing.entryAdult}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Child</p>
+                        <p className="font-semibold text-gray-900">
+                          ₹{pricing.entryChild}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Snow Activity Pricing */}
+                  <div className="bg-cyan-50 p-4 rounded-lg">
+                    <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                      <Star className="w-4 h-4 mr-2 text-cyan-600" />
+                      Snow Activities
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-gray-600">Adult</p>
+                        <p className="font-semibold text-gray-900">
+                          ₹{pricing.snowAdult}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Child</p>
+                        <p className="font-semibold text-gray-900">
+                          ₹{pricing.snowChild}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Meal Pricing */}
+                  <div className="bg-green-50 p-4 rounded-lg">
+                    <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                      <Utensils className="w-4 h-4 mr-2 text-green-600" />
+                      Meals & Services
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-gray-600">Breakfast</p>
+                        <p className="font-semibold text-gray-900">
+                          ₹{pricing.breakfast}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Guide</p>
+                        <p className="font-semibold text-gray-900">
+                          ₹{pricing.guide}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Lunch (Veg)</p>
+                        <p className="font-semibold text-gray-900">
+                          ₹{pricing.lunchVeg}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Lunch (Non-Veg)</p>
+                        <p className="font-semibold text-gray-900">
+                          ₹{pricing.lunchNonVeg}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="flex items-center justify-between pt-2 border-t">
+                    <div className="flex items-center text-sm text-gray-500">
+                      <Calendar className="w-4 h-4 mr-1" />
+                      Created: {pricing.createdAt}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      {pricing.updatedAt}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
-        
-
-        {/* Pricing Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {safePricing.map((pricing) => (
-            <Card key={pricing._id} className="border-0 shadow-sm hover:shadow-md transition-shadow">
-              <CardHeader className="pb-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="text-xl font-bold text-gray-900">{pricing.package_id?.package_name}</CardTitle>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setPricesToUpdate(pricing)}
-                      className="text-blue-600 border-blue-200 hover:bg-blue-50 bg-transparent"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setPricesToDelete(pricing)}
-                      className="text-red-600 border-red-200 hover:bg-red-50 bg-transparent"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Entry Pricing */}
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
-                    <MapPin className="w-4 h-4 mr-2 text-blue-600" />
-                    Entry Fees
-                  </h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-600">Adult</p>
-                      <p className="font-semibold text-gray-900">₹{pricing.entryAdult}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Child</p>
-                      <p className="font-semibold text-gray-900">₹{pricing.entryChild}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Snow Activity Pricing */}
-                <div className="bg-cyan-50 p-4 rounded-lg">
-                  <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
-                    <Star className="w-4 h-4 mr-2 text-cyan-600" />
-                    Snow Activities
-                  </h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-600">Adult</p>
-                      <p className="font-semibold text-gray-900">₹{pricing.snowAdult}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Child</p>
-                      <p className="font-semibold text-gray-900">₹{pricing.snowChild}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Meal Pricing */}
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
-                    <Utensils className="w-4 h-4 mr-2 text-green-600" />
-                    Meals & Services
-                  </h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-600">Breakfast</p>
-                      <p className="font-semibold text-gray-900">₹{pricing.breakfast}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Guide</p>
-                      <p className="font-semibold text-gray-900">₹{pricing.guide}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Lunch (Veg)</p>
-                      <p className="font-semibold text-gray-900">₹{pricing.lunchVeg}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Lunch (Non-Veg)</p>
-                      <p className="font-semibold text-gray-900">₹{pricing.lunchNonVeg}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Footer */}
-                <div className="flex items-center justify-between pt-2 border-t">
-                  <div className="flex items-center text-sm text-gray-500">
-                    <Calendar className="w-4 h-4 mr-1" />
-                    Created: {pricing.createdAt}
-                  </div>
-                  <div className="text-sm text-gray-500">{pricing.updatedAt}</div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
+      </main>
 
       {pricesToDelete && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/20 backdrop-blur-sm z-50 px-4">
           <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
             <div className="flex items-start justify-between">
               <h3 className="text-lg font-semibold mb-2">Delete Pricing?</h3>
-              <button onClick={() => setPricesToDelete(null)} className="p-1" aria-label="Close">
+              <button
+                onClick={() => setPricesToDelete(null)}
+                className="p-1"
+                aria-label="Close"
+              >
                 <X size={18} />
               </button>
             </div>
             <p className="text-gray-600 mb-6">
-              Are you sure you want to delete this pricing entry? This action cannot be undone.
+              Are you sure you want to delete this pricing entry? This action
+              cannot be undone.
             </p>
             <div className="flex justify-end gap-3">
-              <button onClick={() => setPricesToDelete(null)} className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition">
+              <button
+                onClick={() => setPricesToDelete(null)}
+                className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition"
+              >
                 Cancel
               </button>
               <button
@@ -385,17 +416,29 @@ export default function PricingPage() {
           <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-2xl font-semibold">Edit Pricing</h3>
-              <button onClick={() => setPricesToUpdate(null)} className="p-1" aria-label="Close">
+              <button
+                onClick={() => setPricesToUpdate(null)}
+                className="p-1"
+                aria-label="Close"
+              >
                 <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleUpdateSubmit} className="grid grid-cols-1 gap-4">
+            <form
+              onSubmit={handleUpdateSubmit}
+              className="grid grid-cols-1 gap-4"
+            >
               {/* Package select */}
               <div>
                 <label className="flex flex-col">
                   <span className="text-sm font-medium">Package</span>
-                  <select name="package_id" value={formData.package_id} onChange={handleChange} className="border rounded px-3 py-2">
+                  <select
+                    name="package_id"
+                    value={formData.package_id}
+                    onChange={handleChange}
+                    className="border rounded px-3 py-2"
+                  >
                     <option value="">-- select package --</option>
                     {safePackages.map((p) => (
                       <option key={p._id} value={p._id}>
@@ -403,68 +446,166 @@ export default function PricingPage() {
                       </option>
                     ))}
                   </select>
-                  {errors.package_id && <span className="text-xs text-red-500 mt-1">{errors.package_id}</span>}
+                  {errors.package_id && (
+                    <span className="text-xs text-red-500 mt-1">
+                      {errors.package_id}
+                    </span>
+                  )}
                 </label>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <label className="flex flex-col">
                   <span className="text-sm font-medium">Entry Adult (₹)</span>
-                  <input name="entryAdult" value={formData.entryAdult} onChange={handleChange} inputMode="numeric" className="border rounded px-3 py-2" placeholder="e.g. 200" />
-                  {errors.entryAdult && <span className="text-xs text-red-500 mt-1">{errors.entryAdult}</span>}
+                  <input
+                    name="entryAdult"
+                    value={formData.entryAdult}
+                    onChange={handleChange}
+                    inputMode="numeric"
+                    className="border rounded px-3 py-2"
+                    placeholder="e.g. 200"
+                  />
+                  {errors.entryAdult && (
+                    <span className="text-xs text-red-500 mt-1">
+                      {errors.entryAdult}
+                    </span>
+                  )}
                 </label>
                 <label className="flex flex-col">
                   <span className="text-sm font-medium">Entry Child (₹)</span>
-                  <input name="entryChild" value={formData.entryChild} onChange={handleChange} inputMode="numeric" className="border rounded px-3 py-2" placeholder="e.g. 100" />
-                  {errors.entryChild && <span className="text-xs text-red-500 mt-1">{errors.entryChild}</span>}
+                  <input
+                    name="entryChild"
+                    value={formData.entryChild}
+                    onChange={handleChange}
+                    inputMode="numeric"
+                    className="border rounded px-3 py-2"
+                    placeholder="e.g. 100"
+                  />
+                  {errors.entryChild && (
+                    <span className="text-xs text-red-500 mt-1">
+                      {errors.entryChild}
+                    </span>
+                  )}
                 </label>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <label className="flex flex-col">
                   <span className="text-sm font-medium">Snow Adult (₹)</span>
-                  <input name="snowAdult" value={formData.snowAdult} onChange={handleChange} inputMode="numeric" className="border rounded px-3 py-2" />
-                  {errors.snowAdult && <span className="text-xs text-red-500 mt-1">{errors.snowAdult}</span>}
+                  <input
+                    name="snowAdult"
+                    value={formData.snowAdult}
+                    onChange={handleChange}
+                    inputMode="numeric"
+                    className="border rounded px-3 py-2"
+                  />
+                  {errors.snowAdult && (
+                    <span className="text-xs text-red-500 mt-1">
+                      {errors.snowAdult}
+                    </span>
+                  )}
                 </label>
                 <label className="flex flex-col">
                   <span className="text-sm font-medium">Snow Child (₹)</span>
-                  <input name="snowChild" value={formData.snowChild} onChange={handleChange} inputMode="numeric" className="border rounded px-3 py-2" />
-                  {errors.snowChild && <span className="text-xs text-red-500 mt-1">{errors.snowChild}</span>}
+                  <input
+                    name="snowChild"
+                    value={formData.snowChild}
+                    onChange={handleChange}
+                    inputMode="numeric"
+                    className="border rounded px-3 py-2"
+                  />
+                  {errors.snowChild && (
+                    <span className="text-xs text-red-500 mt-1">
+                      {errors.snowChild}
+                    </span>
+                  )}
                 </label>
               </div>
 
               <div className="grid grid-cols-3 gap-4">
                 <label className="flex flex-col">
                   <span className="text-sm font-medium">Breakfast (₹)</span>
-                  <input name="breakfast" value={formData.breakfast} onChange={handleChange} inputMode="numeric" className="border rounded px-3 py-2" />
-                  {errors.breakfast && <span className="text-xs text-red-500 mt-1">{errors.breakfast}</span>}
+                  <input
+                    name="breakfast"
+                    value={formData.breakfast}
+                    onChange={handleChange}
+                    inputMode="numeric"
+                    className="border rounded px-3 py-2"
+                  />
+                  {errors.breakfast && (
+                    <span className="text-xs text-red-500 mt-1">
+                      {errors.breakfast}
+                    </span>
+                  )}
                 </label>
 
                 <label className="flex flex-col">
                   <span className="text-sm font-medium">Lunch Veg (₹)</span>
-                  <input name="lunchVeg" value={formData.lunchVeg} onChange={handleChange} inputMode="numeric" className="border rounded px-3 py-2" />
-                  {errors.lunchVeg && <span className="text-xs text-red-500 mt-1">{errors.lunchVeg}</span>}
+                  <input
+                    name="lunchVeg"
+                    value={formData.lunchVeg}
+                    onChange={handleChange}
+                    inputMode="numeric"
+                    className="border rounded px-3 py-2"
+                  />
+                  {errors.lunchVeg && (
+                    <span className="text-xs text-red-500 mt-1">
+                      {errors.lunchVeg}
+                    </span>
+                  )}
                 </label>
 
                 <label className="flex flex-col">
                   <span className="text-sm font-medium">Lunch Non-Veg (₹)</span>
-                  <input name="lunchNonVeg" value={formData.lunchNonVeg} onChange={handleChange} inputMode="numeric" className="border rounded px-3 py-2" />
-                  {errors.lunchNonVeg && <span className="text-xs text-red-500 mt-1">{errors.lunchNonVeg}</span>}
+                  <input
+                    name="lunchNonVeg"
+                    value={formData.lunchNonVeg}
+                    onChange={handleChange}
+                    inputMode="numeric"
+                    className="border rounded px-3 py-2"
+                  />
+                  {errors.lunchNonVeg && (
+                    <span className="text-xs text-red-500 mt-1">
+                      {errors.lunchNonVeg}
+                    </span>
+                  )}
                 </label>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <label className="flex flex-col">
                   <span className="text-sm font-medium">Guide (₹)</span>
-                  <input name="guide" value={formData.guide} onChange={handleChange} inputMode="numeric" className="border rounded px-3 py-2" />
-                  {errors.guide && <span className="text-xs text-red-500 mt-1">{errors.guide}</span>}
+                  <input
+                    name="guide"
+                    value={formData.guide}
+                    onChange={handleChange}
+                    inputMode="numeric"
+                    className="border rounded px-3 py-2"
+                  />
+                  {errors.guide && (
+                    <span className="text-xs text-red-500 mt-1">
+                      {errors.guide}
+                    </span>
+                  )}
                 </label>
 
                 <div className="flex items-end justify-end gap-3">
-                  <button type="button" onClick={() => setPricesToUpdate(null)} className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition">
+                  <button
+                    type="button"
+                    onClick={() => setPricesToUpdate(null)}
+                    className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition"
+                  >
                     Cancel
                   </button>
-                  <button type="submit" disabled={isUpdating} className={`px-4 py-2 rounded-lg ${isUpdating ? "bg-green-300 cursor-not-allowed" : "bg-green-600 text-white hover:bg-green-700"} transition`}>
+                  <button
+                    type="submit"
+                    disabled={isUpdating}
+                    className={`px-4 py-2 rounded-lg ${
+                      isUpdating
+                        ? "bg-green-300 cursor-not-allowed"
+                        : "bg-green-600 text-white hover:bg-green-700"
+                    } transition`}
+                  >
                     {isUpdating ? "Saving…" : "Save Changes"}
                   </button>
                 </div>
@@ -478,13 +619,20 @@ export default function PricingPage() {
       {pricesToCreate && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/25 backdrop-blur-sm z-50 px-2">
           {/* outer overlay click area */}
-          <div className="absolute inset-0" onClick={() => setPricesToCreate(false)} />
+          <div
+            className="absolute inset-0"
+            onClick={() => setPricesToCreate(false)}
+          />
 
           {/* responsive modal container */}
           <div className="relative z-10 bg-white rounded-lg shadow-xl p-4 sm:p-6 w-full max-w-[95vw] sm:max-w-3xl mx-4 sm:mx-auto max-h-[90vh] overflow-auto">
             <div className="flex items-center justify-between mb-4">
               <h1 className="text-2xl font-bold">Add Pricing</h1>
-              <button onClick={() => setPricesToCreate(false)} className="p-1" aria-label="Close">
+              <button
+                onClick={() => setPricesToCreate(false)}
+                className="p-1"
+                aria-label="Close"
+              >
                 <X size={20} />
               </button>
             </div>
@@ -495,7 +643,12 @@ export default function PricingPage() {
               <div>
                 <label className="flex flex-col">
                   <span className="text-sm font-medium">Package</span>
-                  <select name="package_id" value={formData.package_id} onChange={handleChange} className="border rounded px-3 py-2">
+                  <select
+                    name="package_id"
+                    value={formData.package_id}
+                    onChange={handleChange}
+                    className="border rounded px-3 py-2"
+                  >
                     <option value="">-- select package --</option>
                     {safePackages.map((p) => (
                       <option key={p._id} value={p._id}>
@@ -503,7 +656,11 @@ export default function PricingPage() {
                       </option>
                     ))}
                   </select>
-                  {errors.package_id && <span className="text-xs text-red-500 mt-1">{errors.package_id}</span>}
+                  {errors.package_id && (
+                    <span className="text-xs text-red-500 mt-1">
+                      {errors.package_id}
+                    </span>
+                  )}
                 </label>
               </div>
 
@@ -522,7 +679,11 @@ export default function PricingPage() {
                       onChange={handleChange}
                       className="border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
                     />
-                    {errors.entryAdult && <span className="text-xs text-red-500 mt-1">{errors.entryAdult}</span>}
+                    {errors.entryAdult && (
+                      <span className="text-xs text-red-500 mt-1">
+                        {errors.entryAdult}
+                      </span>
+                    )}
                   </label>
                   <label className="flex flex-col">
                     <input
@@ -533,7 +694,11 @@ export default function PricingPage() {
                       onChange={handleChange}
                       className="border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
                     />
-                    {errors.entryChild && <span className="text-xs text-red-500 mt-1">{errors.entryChild}</span>}
+                    {errors.entryChild && (
+                      <span className="text-xs text-red-500 mt-1">
+                        {errors.entryChild}
+                      </span>
+                    )}
                   </label>
                 </div>
               </div>
@@ -553,7 +718,11 @@ export default function PricingPage() {
                       onChange={handleChange}
                       className="border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-cyan-400 transition"
                     />
-                    {errors.snowAdult && <span className="text-xs text-red-500 mt-1">{errors.snowAdult}</span>}
+                    {errors.snowAdult && (
+                      <span className="text-xs text-red-500 mt-1">
+                        {errors.snowAdult}
+                      </span>
+                    )}
                   </label>
                   <label className="flex flex-col">
                     <input
@@ -564,7 +733,11 @@ export default function PricingPage() {
                       onChange={handleChange}
                       className="border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-cyan-400 transition"
                     />
-                    {errors.snowChild && <span className="text-xs text-red-500 mt-1">{errors.snowChild}</span>}
+                    {errors.snowChild && (
+                      <span className="text-xs text-red-500 mt-1">
+                        {errors.snowChild}
+                      </span>
+                    )}
                   </label>
                 </div>
               </div>
@@ -584,7 +757,11 @@ export default function PricingPage() {
                       onChange={handleChange}
                       className="border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-orange-400 transition"
                     />
-                    {errors.breakfast && <span className="text-xs text-red-500 mt-1">{errors.breakfast}</span>}
+                    {errors.breakfast && (
+                      <span className="text-xs text-red-500 mt-1">
+                        {errors.breakfast}
+                      </span>
+                    )}
                   </label>
                   <label className="flex flex-col">
                     <input
@@ -595,7 +772,11 @@ export default function PricingPage() {
                       onChange={handleChange}
                       className="border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-orange-400 transition"
                     />
-                    {errors.lunchVeg && <span className="text-xs text-red-500 mt-1">{errors.lunchVeg}</span>}
+                    {errors.lunchVeg && (
+                      <span className="text-xs text-red-500 mt-1">
+                        {errors.lunchVeg}
+                      </span>
+                    )}
                   </label>
                   <label className="flex flex-col">
                     <input
@@ -606,7 +787,11 @@ export default function PricingPage() {
                       onChange={handleChange}
                       className="border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-orange-400 transition"
                     />
-                    {errors.lunchNonVeg && <span className="text-xs text-red-500 mt-1">{errors.lunchNonVeg}</span>}
+                    {errors.lunchNonVeg && (
+                      <span className="text-xs text-red-500 mt-1">
+                        {errors.lunchNonVeg}
+                      </span>
+                    )}
                   </label>
                 </div>
               </div>
@@ -625,7 +810,11 @@ export default function PricingPage() {
                     onChange={handleChange}
                     className="border rounded-lg p-2 w-full focus:outline-none focus:ring-2 focus:ring-purple-400 transition"
                   />
-                  {errors.guide && <span className="text-xs text-red-500 mt-1">{errors.guide}</span>}
+                  {errors.guide && (
+                    <span className="text-xs text-red-500 mt-1">
+                      {errors.guide}
+                    </span>
+                  )}
                 </label>
               </div>
 
@@ -635,10 +824,13 @@ export default function PricingPage() {
                   type="submit"
                   disabled={isSubmitting}
                   className={`flex-1 py-2 rounded-lg transition font-semibold flex items-center justify-center gap-2 ${
-                    isSubmitting ? "bg-blue-300 cursor-not-allowed" : "bg-blue-600 text-white hover:bg-blue-700"
+                    isSubmitting
+                      ? "bg-blue-300 cursor-not-allowed"
+                      : "bg-blue-600 text-white hover:bg-blue-700"
                   }`}
                 >
-                  <DollarSign size={18} /> {isSubmitting ? "Adding…" : "Add Price"}
+                  <DollarSign size={18} />{" "}
+                  {isSubmitting ? "Adding…" : "Add Price"}
                 </button>
                 <button
                   type="button"
@@ -656,5 +848,5 @@ export default function PricingPage() {
         </div>
       )}
     </div>
-  )
+  );
 }

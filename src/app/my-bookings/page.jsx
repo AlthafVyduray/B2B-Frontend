@@ -18,7 +18,8 @@ const page = () => {
     getHotelsByRating,
     packages,
     defaultPackages, 
-    hotels
+    hotels,
+    changeState
   } = useBookingStore();
   
 
@@ -42,9 +43,9 @@ const page = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
                 {bookings?.map((booking) => {
                 return ((booking?.source || "").toString().toLowerCase() === "booking") ? (
-                    DisplayBooking(booking, packages, hotels)
+                    DisplayBooking(booking, packages, hotels, changeState)
                 ) : (
-                    DisplayDefaultBooking(booking, defaultPackages, hotels)
+                    DisplayDefaultBooking(booking, defaultPackages, hotels, changeState)
                 );
                 })}
 

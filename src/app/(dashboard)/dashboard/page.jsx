@@ -47,12 +47,12 @@ export default function Dashboard() {
   
 
   return (
-    <div className="flex min-h-screen">
+    <div className="min-h-screen bg-background flex mt-14 lg:mt-0">
       {/* Sidebar - keeping unchanged as requested */}
       {/* <Sidebar active="Destinations" /> */}
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col lg:mt-0 mt-10">
+      <main className="flex-1 flex flex-col">
         {/* Top Navbar */}
         <Header />
 
@@ -123,7 +123,7 @@ export default function Dashboard() {
 
 
         </main>
-      </div>
+      </main>
     </div>
   )
 }

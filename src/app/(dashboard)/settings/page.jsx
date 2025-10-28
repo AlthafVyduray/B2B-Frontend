@@ -32,7 +32,8 @@ export default function SettingsPage() {
     if (!newPassword) e.newPassword = "New password is required.";
     else if (newPassword.length < 6)
       e.newPassword = "Must be at least 6 characters.";
-    if (!confirmPassword) e.confirmPassword = "Please confirm your new password.";
+    if (!confirmPassword)
+      e.confirmPassword = "Please confirm your new password.";
     else if (newPassword !== confirmPassword)
       e.confirmPassword = "Passwords do not match.";
     return e;
@@ -62,96 +63,113 @@ export default function SettingsPage() {
   };
 
   return (
-    <div>
-      <Header />
-      <div className="min-h-screen flex items-center justify-center bg-white px-4 m-2">
-      <Card className="w-full max-w-md shadow-xl rounded-2xl">
-        <CardContent className="p-6 space-y-6">
-          <h2 className="text-2xl font-bold text-center text-blue-700">
-            Change Password
-          </h2>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* New Password */}
+    <div className="min-h-screen bg-background flex mt-14 lg:mt-0">
+      <main className="flex-1 flex flex-col">
+        <Header />
+        <div className="p-6 space-y-6 bg-gray-50">
+          <div className="flex items-center justify-between mb-8">
             <div>
-              <label className="block text-sm font-medium mb-1">New Password</label>
-              <div className="relative">
-                <Input
-                  type={showNew ? "text" : "password"}
-                  name="newPassword"
-                  value={formData.newPassword}
-                  onChange={handleChange}
-                  placeholder="Enter new password"
-                  className={errors.newPassword ? "border-red-400" : ""}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowNew((s) => !s)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 text-gray-600"
-                >
-                  {showNew ? "Hide" : "Show"}
-                </button>
-              </div>
-              {errors.newPassword && (
-                <p className="text-xs text-red-600 mt-1">{errors.newPassword}</p>
-              )}
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                Settings
+              </h1>
+              <p className="text-gray-600">
+                Manage password
+              </p>
             </div>
+          </div>
+          <Card className="w-full max-w-md shadow-xl rounded-2xl mx-auto">
+            <CardContent className="p-6 space-y-6">
+              <h2 className="text-2xl font-bold text-center text-blue-700">
+                Change Password
+              </h2>
 
-            {/* Confirm Password */}
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Confirm New Password
-              </label>
-              <div className="relative">
-                <Input
-                  type={showConfirm ? "text" : "password"}
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  placeholder="Confirm new password"
-                  className={errors.confirmPassword ? "border-red-400" : ""}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirm((s) => !s)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 text-gray-600"
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {/* New Password */}
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    New Password
+                  </label>
+                  <div className="relative">
+                    <Input
+                      type={showNew ? "text" : "password"}
+                      name="newPassword"
+                      value={formData.newPassword}
+                      onChange={handleChange}
+                      placeholder="Enter new password"
+                      className={errors.newPassword ? "border-red-400" : ""}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNew((s) => !s)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 text-gray-600"
+                    >
+                      {showNew ? "Hide" : "Show"}
+                    </button>
+                  </div>
+                  {errors.newPassword && (
+                    <p className="text-xs text-red-600 mt-1">
+                      {errors.newPassword}
+                    </p>
+                  )}
+                </div>
+
+                {/* Confirm Password */}
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Confirm New Password
+                  </label>
+                  <div className="relative">
+                    <Input
+                      type={showConfirm ? "text" : "password"}
+                      name="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      placeholder="Confirm new password"
+                      className={errors.confirmPassword ? "border-red-400" : ""}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirm((s) => !s)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 text-gray-600"
+                    >
+                      {showConfirm ? "Hide" : "Show"}
+                    </button>
+                  </div>
+                  {errors.confirmPassword && (
+                    <p className="text-xs text-red-600 mt-1">
+                      {errors.confirmPassword}
+                    </p>
+                  )}
+                </div>
+
+                {/* Message */}
+                {message && (
+                  <div
+                    className={`text-sm px-3 py-2 rounded ${
+                      message.type === "success"
+                        ? "bg-green-50 text-green-800 border border-green-100"
+                        : "bg-red-50 text-red-800 border border-red-100"
+                    }`}
+                  >
+                    {message.text}
+                  </div>
+                )}
+
+                {/* Submit Button */}
+                <Button
+                  type="submit"
+                  disabled={submitting}
+                  className={`w-full py-3  hover:scale-105${
+                    submitting ? "bg-gray-400" : "bg-black"
+                  } text-white rounded-lg`}
                 >
-                  {showConfirm ? "Hide" : "Show"}
-                </button>
-              </div>
-              {errors.confirmPassword && (
-                <p className="text-xs text-red-600 mt-1">{errors.confirmPassword}</p>
-              )}
-            </div>
-
-            {/* Message */}
-            {message && (
-              <div
-                className={`text-sm px-3 py-2 rounded ${
-                  message.type === "success"
-                    ? "bg-green-50 text-green-800 border border-green-100"
-                    : "bg-red-50 text-red-800 border border-red-100"
-                }`}
-              >
-                {message.text}
-              </div>
-            )}
-
-            {/* Submit Button */}
-            <Button
-              type="submit"
-              disabled={submitting}
-              className={`w-full py-3  hover:scale-105${
-                submitting ? "bg-gray-400" : "bg-black"
-              } text-white rounded-lg`}
-            >
-              {submitting ? "Updating..." : "Update Password"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+                  {submitting ? "Updating..." : "Update Password"}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </main>
     </div>
-  </div>
-    
   );
 }

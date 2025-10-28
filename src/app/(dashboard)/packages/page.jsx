@@ -293,11 +293,11 @@ export default function PackagesPage() {
 
  
   return (
-    <div className="min-h-screen bg-white flex lg:mt-0 mt-10 m-2">
+    <div className="min-h-screen bg-background flex mt-14 lg:mt-0">
 
       <main className="flex-1 flex flex-col">
         <Header />
-        <div className="lg:p-8 space-y-8">
+        <div className="p-6 space-y-6 bg-gray-50">
           {/* Header */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
